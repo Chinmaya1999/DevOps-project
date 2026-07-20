@@ -82,8 +82,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            # Navigate to project directory
-            cd /home/ec2-user/DevOps-project || exit 1
+            # Navigate to project directory (using root's home)
+            cd /root/DevOps-project || exit 1
             
             # Pull latest changes
             git pull origin main
@@ -137,10 +137,10 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSK_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            cd /home/ec2-user/DevOps-project
+            cd /root/DevOps-project
             docker-compose down
             # Pull previous stable versions if tagged
             docker pull awsmallick1999/infrapilot-backend:previous || echo "No previous version found"
