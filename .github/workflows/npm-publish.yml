@@ -9,16 +9,11 @@ on:
 env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-  DOCKER_IMAGE_BACKEND: awsmallick1999/infrapilot-backend
-  DOCKER_IMAGE_FRONTEND: awsmallick1999/infrapilot-frontend
 
 jobs:
   # Build and Push Docker Images
-  build:
+  build-backend:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [backend, frontend]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -32,21 +27,48 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push ${{ matrix.service }}
+      - name: Build and push Backend
         uses: docker/build-push-action@v4
         with:
-          context: ./${{ matrix.service }}
-          file: ./${{ matrix.service }}/Dockerfile
+          context: ./backend
+          file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ env.DOCKER_IMAGE_${{ matrix.service }} }}:latest
-            ${{ env.DOCKER_IMAGE_${{ matrix.service }} }}:${{ github.sha }}
-          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_${{ matrix.service }} }}:buildcache
-          cache-to: type=registry,ref=${{ env.DOCKER_IMAGE_${{ matrix.service }} }}:buildcache,mode=max
+            awsmallick1999/infrapilot-backend:latest
+            awsmallick1999/infrapilot-backend:${{ github.sha }}
+          cache-from: type=registry,ref=awsmallick1999/infrapilot-backend:buildcache
+          cache-to: type=registry,ref=awsmallick1999/infrapilot-backend:buildcache,mode=max
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            awsmallick1999/infrapilot-frontend:latest
+            awsmallick1999/infrapilot-frontend:${{ github.sha }}
+          cache-from: type=registry,ref=awsmallick1999/infrapilot-frontend:buildcache
+          cache-to: type=registry,ref=awsmallick1999/infrapilot-frontend:buildcache,mode=max
 
   # Deploy to AWS EC2
   deploy:
-    needs: build
+    needs: [build-backend, build-frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -90,7 +112,14 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Check application health
+      - name: Check backend health
+        uses: jtalk/url-health-check-action@v3
+        with:
+          url: "http://${{ secrets.EC2_HOST }}:5001"
+          max-attempts: 5
+          retry-delay: 10s
+
+      - name: Check frontend health
         uses: jtalk/url-health-check-action@v3
         with:
           url: "http://${{ secrets.EC2_HOST }}:3000"
@@ -108,12 +137,12 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_SSK_KEY }}
           port: 22
           script: |
             cd /home/ec2-user/DevOps-project
             docker-compose down
-            # Deploy previous stable version if available
-            docker pull awsmallick1999/infrapilot-backend:previous
-            docker pull awsmallick1999/infrapilot-frontend:previous
+            # Pull previous stable versions if tagged
+            docker pull awsmallick1999/infrapilot-backend:previous || echo "No previous version found"
+            docker pull awsmallick1999/infrapilot-frontend:previous || echo "No previous version found"
             docker-compose up -d
