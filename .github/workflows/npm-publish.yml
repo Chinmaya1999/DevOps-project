@@ -1,33 +1,119 @@
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
-# For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
-
-name: Node.js Package
+name: CI/CD Pipeline
 
 on:
-  release:
-    types: [created]
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  DOCKER_IMAGE_BACKEND: awsmallick1999/infrapilot-backend
+  DOCKER_IMAGE_FRONTEND: awsmallick1999/infrapilot-frontend
 
 jobs:
+  # Build and Push Docker Images
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [backend, frontend]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      - run: npm test
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-  publish-npm:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push ${{ matrix.service }}
+        uses: docker/build-push-action@v4
+        with:
+          context: ./${{ matrix.service }}
+          file: ./${{ matrix.service }}/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKER_IMAGE_${{ matrix.service }} }}:latest
+            ${{ env.DOCKER_IMAGE_${{ matrix.service }} }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_${{ matrix.service }} }}:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKER_IMAGE_${{ matrix.service }} }}:buildcache,mode=max
+
+  # Deploy to AWS EC2
+  deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
         with:
-          node-version: 20
-          registry-url: https://registry.npmjs.org/
-      - run: npm ci
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            # Navigate to project directory
+            cd /home/ec2-user/DevOps-project || exit 1
+            
+            # Pull latest changes
+            git pull origin main
+            
+            # Stop and remove old containers
+            docker-compose down
+            
+            # Pull latest images
+            docker pull awsmallick1999/infrapilot-backend:latest
+            docker pull awsmallick1999/infrapilot-frontend:latest
+            
+            # Create .env file from GitHub secret
+            echo "${{ secrets.ENV_FILE }}" > .env
+            
+            # Start containers
+            docker-compose up -d
+            
+            # Clean up unused images
+            docker image prune -f
+            
+            # Check container status
+            docker ps
+
+  # Health Check
+  health-check:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check application health
+        uses: jtalk/url-health-check-action@v3
+        with:
+          url: "http://${{ secrets.EC2_HOST }}:3000"
+          max-attempts: 5
+          retry-delay: 10s
+
+  # Rollback (optional)
+  rollback:
+    needs: [deploy, health-check]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rollback deployment
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            cd /home/ec2-user/DevOps-project
+            docker-compose down
+            # Deploy previous stable version if available
+            docker pull awsmallick1999/infrapilot-backend:previous
+            docker pull awsmallick1999/infrapilot-frontend:previous
+            docker-compose up -d
