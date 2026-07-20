@@ -82,30 +82,40 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            # Navigate to project directory (using root's home)
-            cd /root/DevOps-project || exit 1
+            # Use ec2-user's home directory instead of root
+            PROJECT_DIR="/home/ec2-user/DevOps-project"
+            
+            # Check if project exists, if not clone it
+            if [ ! -d "$PROJECT_DIR" ]; then
+              echo "Project directory not found. Cloning repository..."
+              cd /home/ec2-user
+              git clone https://github.com/Chinmaya1999/DevOps-project.git
+            fi
+            
+            # Navigate to project directory
+            cd $PROJECT_DIR || exit 1
             
             # Pull latest changes
             git pull origin main
             
             # Stop and remove old containers
-            docker-compose down
+            sudo docker-compose down
             
             # Pull latest images
-            docker pull awsmallick1999/infrapilot-backend:latest
-            docker pull awsmallick1999/infrapilot-frontend:latest
+            sudo docker pull awsmallick1999/infrapilot-backend:latest
+            sudo docker pull awsmallick1999/infrapilot-frontend:latest
             
             # Create .env file from GitHub secret
             echo "${{ secrets.ENV_FILE }}" > .env
             
             # Start containers
-            docker-compose up -d
+            sudo docker-compose up -d
             
             # Clean up unused images
-            docker image prune -f
+            sudo docker image prune -f
             
             # Check container status
-            docker ps
+            sudo docker ps
 
   # Health Check
   health-check:
@@ -126,7 +136,7 @@ jobs:
           max-attempts: 5
           retry-delay: 10s
 
-  # Rollback (optional)
+  # Rollback
   rollback:
     needs: [deploy, health-check]
     if: failure()
@@ -140,9 +150,10 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            cd /root/DevOps-project
-            docker-compose down
+            PROJECT_DIR="/home/ec2-user/DevOps-project"
+            cd $PROJECT_DIR
+            sudo docker-compose down
             # Pull previous stable versions if tagged
-            docker pull awsmallick1999/infrapilot-backend:previous || echo "No previous version found"
-            docker pull awsmallick1999/infrapilot-frontend:previous || echo "No previous version found"
-            docker-compose up -d
+            sudo docker pull awsmallick1999/infrapilot-backend:previous || echo "No previous version found"
+            sudo docker pull awsmallick1999/infrapilot-frontend:previous || echo "No previous version found"
+            sudo docker-compose up -d
