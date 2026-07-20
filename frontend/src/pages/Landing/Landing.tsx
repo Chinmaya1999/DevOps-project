@@ -246,7 +246,7 @@ const Landing: React.FC = () => {
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
                 Why Choose
                 <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  {" "}DevOps Generator?
+                  {" "}InfraPilot.?
                 </span>
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
@@ -402,7 +402,7 @@ const Landing: React.FC = () => {
             <div>
               <div className="flex items-center mb-4">
                 <GitBranch className="w-8 h-8 text-blue-400 mr-2" />
-                <span className="text-xl font-bold">DevOps Generator</span>
+                <span className="text-xl font-bold">InfraPilot.</span>
               </div>
               <p className="text-gray-400">
                 Generate production-ready DevOps configurations in seconds.
