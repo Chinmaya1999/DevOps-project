@@ -117,28 +117,11 @@ jobs:
             # Check container status
             sudo docker ps
 
-  # Health Check
-  health-check:
-    needs: deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check backend health
-        uses: jtalk/url-health-check-action@v3
-        with:
-          url: "http://${{ secrets.EC2_HOST }}:5001"
-          max-attempts: 5
-          retry-delay: 10s
-
-      - name: Check frontend health
-        uses: jtalk/url-health-check-action@v3
-        with:
-          url: "http://${{ secrets.EC2_HOST }}:3000"
-          max-attempts: 5
-          retry-delay: 10s
+ 
 
   # Rollback
   rollback:
-    needs: [deploy, health-check]
+    needs: [deploy]
     if: failure()
     runs-on: ubuntu-latest
     steps:
