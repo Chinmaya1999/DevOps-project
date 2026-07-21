@@ -437,9 +437,20 @@ const Landing: React.FC = () => {
             </div>
           </div>
           
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 DevOps Pipeline Generator. All rights reserved.</p>
-          </div>
+         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+  <p>&copy; 2024 DevOps Pipeline Generator. All rights reserved.</p>
+  <p className="mt-2 text-sm">
+    Developed by{" "}
+    <a
+      href="https://github.com/Chinmaya1999"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+    >
+      Chinmaya Kumar Mallick
+    </a>
+  </p>
+</div>
         </div>
       </footer>
     </div>
