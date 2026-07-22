@@ -74,4 +74,113 @@ router.get('/detect-stack/:owner/:repo', auth, async (req, res) => {
   }
 });
 
+// Get repository file structure
+router.get('/files/:owner/:repo', auth, async (req, res) => {
+  try {
+    const { owner, repo } = req.params;
+    const { token, path = '' } = req.query;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'GitHub token is required' });
+    }
+
+    const files = await githubIntegration.getFileStructure(owner, repo, token, path);
+    res.json({ files });
+  } catch (error) {
+    console.error('Error fetching file structure:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get file content
+router.get('/file/:owner/:repo', auth, async (req, res) => {
+  try {
+    const { owner, repo } = req.params;
+    const { token, path } = req.query;
+    
+    if (!token || !path) {
+      return res.status(400).json({ error: 'GitHub token and file path are required' });
+    }
+
+    const content = await githubIntegration.getFileContent(owner, repo, token, path);
+    res.json({ content });
+  } catch (error) {
+    console.error('Error fetching file content:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update file content
+router.put('/file/:owner/:repo', auth, async (req, res) => {
+  try {
+    const { owner, repo } = req.params;
+    const { token, path, content, message } = req.body;
+    
+    if (!token || !path || !content) {
+      return res.status(400).json({ error: 'GitHub token, file path, and content are required' });
+    }
+
+    const result = await githubIntegration.updateFileContent(owner, repo, token, path, content, message);
+    res.json({ success: true, result });
+  } catch (error) {
+    console.error('Error updating file content:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Build Docker image and push to Docker Hub
+router.post('/build-docker', auth, async (req, res) => {
+  try {
+    const { token, owner, repo, dockerHubUsername, dockerHubToken, imageName, tag } = req.body;
+    
+    if (!token || !owner || !repo || !dockerHubUsername || !dockerHubToken) {
+      return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    const result = await githubIntegration.buildAndPushDockerImage(
+      token, owner, repo, dockerHubUsername, dockerHubToken, imageName, tag
+    );
+    res.json({ success: true, logs: result.logs });
+  } catch (error) {
+    console.error('Error building Docker image:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get repository branches
+router.get('/branches/:owner/:repo', auth, async (req, res) => {
+  try {
+    const { owner, repo } = req.params;
+    const { token } = req.query;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'GitHub token is required' });
+    }
+
+    const branches = await githubIntegration.getRepositoryBranches(owner, repo, token);
+    res.json({ branches });
+  } catch (error) {
+    console.error('Error fetching branches:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get repository commits
+router.get('/commits/:owner/:repo', auth, async (req, res) => {
+  try {
+    const { owner, repo } = req.params;
+    const { token, branch, limit = 10 } = req.query;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'GitHub token is required' });
+    }
+
+    const commits = await githubIntegration.getRepositoryCommits(owner, repo, token, branch, limit);
+    res.json({ commits });
+  } catch (error) {
+    console.error('Error fetching commits:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

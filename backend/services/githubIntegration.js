@@ -528,6 +528,162 @@ class GitHubIntegration {
       return null;
     }
   }
+
+  async getFileStructure(owner, repo, token, path = '') {
+    try {
+      const contents = await this.getRepositoryContents(owner, repo, token, path);
+      
+      if (!Array.isArray(contents)) {
+        return [];
+      }
+
+      const structure = [];
+      
+      for (const item of contents) {
+        if (item.type === 'dir') {
+          const children = await this.getFileStructure(owner, repo, token, item.path);
+          structure.push({
+            name: item.name,
+            path: item.path,
+            type: 'dir',
+            children: children
+          });
+        } else {
+          structure.push({
+            name: item.name,
+            path: item.path,
+            type: 'file',
+            size: item.size
+          });
+        }
+      }
+      
+      return structure;
+    } catch (error) {
+      console.error('Error getting file structure:', error);
+      return [];
+    }
+  }
+
+  async updateFileContent(owner, repo, token, path, content, message) {
+    try {
+      // First get the current file to get the SHA
+      const currentFile = await axios.get(`${this.baseURL}/repos/${owner}/${repo}/contents/${path}`, {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json'
+        }
+      });
+
+      const sha = currentFile.data.sha;
+      const encodedContent = Buffer.from(content).toString('base64');
+
+      const response = await axios.put(`${this.baseURL}/repos/${owner}/${repo}/contents/${path}`, {
+        message: message || `Update ${path}`,
+        content: encodedContent,
+        sha: sha
+      }, {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json'
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to update file: ${error.message}`);
+    }
+  }
+
+  async buildAndPushDockerImage(token, owner, repo, dockerHubUsername, dockerHubToken, imageName, tag = 'latest') {
+    const { exec } = require('child_process');
+    const util = require('util');
+    const execPromise = util.promisify(exec);
+
+    const logs = [];
+    const log = (message) => {
+      logs.push(message);
+      console.log(message);
+    };
+
+    try {
+      log('Starting Docker build process...');
+      log(`Repository: ${owner}/${repo}`);
+      log(`Docker Hub: ${dockerHubUsername}/${imageName}:${tag}`);
+
+      // Clone the repository
+      log('Cloning repository...');
+      const repoUrl = `https://${token}@github.com/${owner}/${repo}.git`;
+      await execPromise(`git clone ${repoUrl} /tmp/${repo}`);
+      log('Repository cloned successfully');
+
+      // Change to repository directory
+      const repoDir = `/tmp/${repo}`;
+      process.chdir(repoDir);
+
+      // Login to Docker Hub
+      log('Logging into Docker Hub...');
+      await execPromise(`echo ${dockerHubToken} | docker login -u ${dockerHubUsername} --password-stdin`);
+      log('Docker Hub login successful');
+
+      // Build Docker image
+      log('Building Docker image...');
+      const fullImageName = `${dockerHubUsername}/${imageName}:${tag}`;
+      await execPromise(`docker build -t ${fullImageName} .`);
+      log('Docker image built successfully');
+
+      // Push to Docker Hub
+      log('Pushing to Docker Hub...');
+      await execPromise(`docker push ${fullImageName}`);
+      log('Docker image pushed successfully');
+
+      // Cleanup
+      log('Cleaning up...');
+      process.chdir('/tmp');
+      await execPromise(`rm -rf ${repoDir}`);
+      log('Cleanup complete');
+
+      return { logs: logs.join('\n'), success: true };
+    } catch (error) {
+      log(`Error: ${error.message}`);
+      return { logs: logs.join('\n'), success: false, error: error.message };
+    }
+  }
+
+  async getRepositoryBranches(owner, repo, token) {
+    try {
+      const response = await axios.get(`${this.baseURL}/repos/${owner}/${repo}/branches`, {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json'
+        },
+        params: {
+          per_page: 100
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to fetch branches: ${error.message}`);
+    }
+  }
+
+  async getRepositoryCommits(owner, repo, token, branch = 'main', limit = 10) {
+    try {
+      const response = await axios.get(`${this.baseURL}/repos/${owner}/${repo}/commits`, {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json'
+        },
+        params: {
+          sha: branch,
+          per_page: limit
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to fetch commits: ${error.message}`);
+    }
+  }
 }
 
 module.exports = new GitHubIntegration();
