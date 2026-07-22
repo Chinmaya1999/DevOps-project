@@ -42,9 +42,9 @@ const PAYMENT_CONFIG = {
   upiQRCode: '/uploads/qrcode.png', // Place your PhonePe QR code image at backend/uploads/qrcode.png
   bankDetails: {
     accountName: 'Chinmaya Kumar Mallick',
-    accountNumber: '1234567890',
-    ifscCode: 'SBIN0001234',
-    bankName: 'State Bank of India'
+    accountNumber: '9178550406',
+    ifscCode: 'AIRP0000001',
+    bankName: 'AIRTEL PAYMENTS BANK'
   },
   pricing: {
     monthly: 999,
