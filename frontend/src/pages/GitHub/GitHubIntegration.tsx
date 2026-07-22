@@ -69,6 +69,8 @@ const GitHubIntegration: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<GitHubFile | null>(null);
   const [fileContent, setFileContent] = useState('');
   const [editingFile, setEditingFile] = useState(false);
+  const [commitMessage, setCommitMessage] = useState('');
+  const [savingFile, setSavingFile] = useState(false);
   const [dockerBuildModalVisible, setDockerBuildModalVisible] = useState(false);
   const [dockerHubUsername, setDockerHubUsername] = useState('');
   const [dockerHubToken, setDockerHubToken] = useState('');
@@ -135,14 +137,20 @@ const GitHubIntegration: React.FC = () => {
       const response = await api.get(`/github/files/${owner}/${repo}`, {
         params: { token }
       });
+      console.log('File structure response:', response.data);
       if (response.data.files) {
+        console.log('Setting file structure:', response.data.files);
         setFileStructure(response.data.files);
         setSelectedRepo({ owner, repo });
         setFileStructureDrawerVisible(true);
         // Also fetch branches and commits
         fetchBranchesAndCommits(owner, repo);
+      } else {
+        console.warn('No files in response');
+        message.warning('No files found in repository');
       }
     } catch (err: any) {
+      console.error('Error fetching file structure:', err);
       message.error('Failed to fetch file structure');
     } finally {
       setLoadingFiles(false);
@@ -166,17 +174,22 @@ const GitHubIntegration: React.FC = () => {
 
   const saveFileContent = async () => {
     if (!selectedFile || !selectedRepo) return;
+    setSavingFile(true);
     try {
+      const commitMsg = commitMessage || `Update ${selectedFile.name}`;
       await api.put(`/github/file/${selectedRepo.owner}/${selectedRepo.repo}`, {
         token,
         path: selectedFile.path,
         content: fileContent,
-        message: `Update ${selectedFile.name}`
+        message: commitMsg
       });
-      message.success('File saved successfully');
+      message.success('File saved and committed successfully');
       setEditingFile(false);
+      setCommitMessage('');
     } catch (err: any) {
       message.error('Failed to save file');
+    } finally {
+      setSavingFile(false);
     }
   };
 
@@ -218,17 +231,27 @@ const GitHubIntegration: React.FC = () => {
   };
 
   const transformFileToTreeData = (files: GitHubFile[]): any[] => {
+    if (!files || files.length === 0) return [];
     return files.map(file => ({
       title: (
-        <Space>
-          {file.type === 'dir' ? <FolderOpenOutlined /> : <FileOutlined />}
-          <span onClick={() => file.type === 'file' && fetchFileContent(file.path)}>
-            {file.name}
-          </span>
-        </Space>
+        <div 
+          style={{ cursor: file.type === 'file' ? 'pointer' : 'default' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (file.type === 'file') {
+              fetchFileContent(file.path);
+            }
+          }}
+        >
+          <Space>
+            {file.type === 'dir' ? <FolderOpenOutlined /> : <FileOutlined />}
+            <span>{file.name}</span>
+          </Space>
+        </div>
       ),
       key: file.path,
-      children: file.children ? transformFileToTreeData(file.children) : undefined
+      children: file.children && file.children.length > 0 ? transformFileToTreeData(file.children) : undefined,
+      isLeaf: file.type === 'file'
     }));
   };
 
@@ -762,36 +785,52 @@ const GitHubIntegration: React.FC = () => {
                   {selectedFile ? (
                     <div>
                       <div style={{ marginBottom: 16 }}>
-                        <Space>
-                          <FileOutlined />
-                          <strong>{selectedFile.name}</strong>
-                          <Tag>{selectedFile.path}</Tag>
-                          {!editingFile && (
-                            <Button
-                              size="small"
-                              icon={<SaveOutlined />}
-                              onClick={() => setEditingFile(true)}
-                            >
-                              Edit
-                            </Button>
-                          )}
-                          {editingFile && (
-                            <Space>
+                        <Space orientation="vertical" style={{ width: '100%' }}>
+                          <Space>
+                            <FileOutlined />
+                            <strong>{selectedFile.name}</strong>
+                            <Tag>{selectedFile.path}</Tag>
+                            {!editingFile && (
                               <Button
                                 size="small"
-                                type="primary"
                                 icon={<SaveOutlined />}
-                                onClick={saveFileContent}
+                                onClick={() => setEditingFile(true)}
                               >
-                                Save
+                                Edit
                               </Button>
-                              <Button
-                                size="small"
-                                onClick={() => setEditingFile(false)}
-                              >
-                                Cancel
-                              </Button>
-                            </Space>
+                            )}
+                          </Space>
+                          {editingFile && (
+                            <div>
+                              <div style={{ marginBottom: 8 }}>
+                                <Input
+                                  placeholder="Enter commit message (optional)"
+                                  value={commitMessage}
+                                  onChange={(e) => setCommitMessage(e.target.value)}
+                                  prefix={<SaveOutlined />}
+                                />
+                              </div>
+                              <Space>
+                                <Button
+                                  size="small"
+                                  type="primary"
+                                  icon={<SaveOutlined />}
+                                  onClick={saveFileContent}
+                                  loading={savingFile}
+                                >
+                                  Commit & Push
+                                </Button>
+                                <Button
+                                  size="small"
+                                  onClick={() => {
+                                    setEditingFile(false);
+                                    setCommitMessage('');
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              </Space>
+                            </div>
                           )}
                         </Space>
                       </div>
@@ -819,7 +858,7 @@ const GitHubIntegration: React.FC = () => {
                     </div>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-                      Select a file to view its content
+                      Select a file from the File Structure tab to view and edit its content
                     </div>
                   )}
                 </div>
