@@ -669,8 +669,14 @@ class GitHubIntegration {
     }
   }
 
-  async getRepositoryCommits(owner, repo, token, branch = 'main', limit = 10) {
+  async getRepositoryCommits(owner, repo, token, branch = null, limit = 10) {
     try {
+      // If branch not specified, get the default branch from repository details
+      if (!branch) {
+        const repoDetails = await this.getRepositoryDetails(owner, repo, token);
+        branch = repoDetails.default_branch || 'main';
+      }
+
       const response = await this.axiosInstance.get(`${this.baseURL}/repos/${owner}/${repo}/commits`, {
         headers: {
           Authorization: `token ${token}`
