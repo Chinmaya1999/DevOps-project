@@ -250,7 +250,9 @@ const GitHubIntegration: React.FC = () => {
         setCommits(commitsResponse.data.commits);
       }
     } catch (err: any) {
-      message.error('Failed to fetch branches/commits');
+      const errorMsg = err.response?.data?.error || 'Failed to fetch branches/commits';
+      console.error('Error fetching branches/commits:', err);
+      message.error(errorMsg);
     } finally {
       setLoadingBranches(false);
       setLoadingCommits(false);

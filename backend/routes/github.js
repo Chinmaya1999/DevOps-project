@@ -88,7 +88,13 @@ router.get('/files/:owner/:repo', auth, async (req, res) => {
     res.json({ files });
   } catch (error) {
     console.error('Error fetching file structure:', error);
-    res.status(500).json({ error: error.message });
+    if (error.response?.status === 404) {
+      res.status(404).json({ error: 'Repository not found or access denied' });
+    } else if (error.response?.status === 401) {
+      res.status(401).json({ error: 'Invalid GitHub token' });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
@@ -161,7 +167,13 @@ router.get('/branches/:owner/:repo', auth, async (req, res) => {
     res.json({ branches });
   } catch (error) {
     console.error('Error fetching branches:', error);
-    res.status(500).json({ error: error.message });
+    if (error.response?.status === 404) {
+      res.status(404).json({ error: 'Repository not found or access denied' });
+    } else if (error.response?.status === 401) {
+      res.status(401).json({ error: 'Invalid GitHub token' });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
@@ -175,11 +187,29 @@ router.get('/commits/:owner/:repo', auth, async (req, res) => {
       return res.status(400).json({ error: 'GitHub token is required' });
     }
 
-    const commits = await githubIntegration.getRepositoryCommits(owner, repo, token, branch, limit);
+    // If branch not specified, get the default branch from repository details
+    let targetBranch = branch;
+    if (!targetBranch) {
+      try {
+        const repoDetails = await githubIntegration.getRepositoryDetails(owner, repo, token);
+        targetBranch = repoDetails.default_branch || 'main';
+      } catch (repoError) {
+        console.error('Error fetching repository details:', repoError);
+        return res.status(404).json({ error: 'Repository not found or access denied' });
+      }
+    }
+
+    const commits = await githubIntegration.getRepositoryCommits(owner, repo, token, targetBranch, limit);
     res.json({ commits });
   } catch (error) {
     console.error('Error fetching commits:', error);
-    res.status(500).json({ error: error.message });
+    if (error.response?.status === 404) {
+      res.status(404).json({ error: 'Repository or branch not found' });
+    } else if (error.response?.status === 401) {
+      res.status(401).json({ error: 'Invalid GitHub token' });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
