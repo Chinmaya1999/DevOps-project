@@ -369,9 +369,9 @@ const GitHubIntegration: React.FC = () => {
   return (
     <div style={{ padding: '24px' }}>
       <Card title="GitHub Integration" extra={<GithubOutlined style={{ fontSize: 24 }} />}>
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
+        <Space orientation="vertical" style={{ width: '100%' }} size="large">
           <Alert
-            message="GitHub Token Required"
+            title="GitHub Token Required"
             description="Enter your GitHub personal access token to fetch and analyze your repositories. The token should have 'repo' scope permissions."
             type="info"
             showIcon
@@ -609,7 +609,7 @@ const GitHubIntegration: React.FC = () => {
           </Space>
         }
         placement="right"
-        width={800}
+        size="large"
         open={fileStructureDrawerVisible}
         onClose={() => setFileStructureDrawerVisible(false)}
         extra={
@@ -669,7 +669,7 @@ const GitHubIntegration: React.FC = () => {
                           No branches found
                         </div>
                       ) : (
-                        <Space direction="vertical" style={{ width: '100%' }} size="small">
+                        <Space orientation="vertical" style={{ width: '100%' }} size="small">
                           {branches.map((branch) => (
                             <Card
                               key={branch.name}
@@ -719,26 +719,28 @@ const GitHubIntegration: React.FC = () => {
                           No commits found
                         </div>
                       ) : (
-                        <Space direction="vertical" style={{ width: '100%' }} size="small">
+                        <Space orientation="vertical" style={{ width: '100%' }} size="small">
                           {commits.map((commit) => (
                             <Card key={commit.sha} size="small" hoverable>
                               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                                <img
-                                  src={commit.author.avatar_url}
-                                  alt={commit.author.login}
-                                  style={{ width: '32px', height: '32px', borderRadius: '50%' }}
-                                />
+                                {commit.author?.avatar_url && (
+                                  <img
+                                    src={commit.author.avatar_url}
+                                    alt={commit.author?.login || 'Unknown'}
+                                    style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+                                  />
+                                )}
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontWeight: 500, marginBottom: 4 }}>
-                                    {commit.commit.message.split('\n')[0]}
+                                    {commit.commit?.message?.split('\n')[0] || 'No message'}
                                   </div>
                                   <Space size="small" style={{ fontSize: '12px', color: '#666' }}>
-                                    <span>{commit.author.login}</span>
+                                    <span>{commit.author?.login || 'Unknown'}</span>
                                     <span>•</span>
-                                    <span>{new Date(commit.commit.author.date).toLocaleDateString()}</span>
+                                    <span>{commit.commit?.author?.date ? new Date(commit.commit.author.date).toLocaleDateString() : 'Unknown date'}</span>
                                     <span>•</span>
                                     <span style={{ fontFamily: 'monospace' }}>
-                                      {commit.sha.substring(0, 7)}
+                                      {commit.sha?.substring(0, 7) || 'Unknown'}
                                     </span>
                                   </Space>
                                 </div>
@@ -853,9 +855,9 @@ const GitHubIntegration: React.FC = () => {
         ]}
         width={600}
       >
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
+        <Space orientation="vertical" style={{ width: '100%' }} size="large">
           <Alert
-            message="Docker Hub Credentials"
+            title="Docker Hub Credentials"
             description="Enter your Docker Hub credentials to build and push the image."
             type="info"
             showIcon
