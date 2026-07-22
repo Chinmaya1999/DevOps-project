@@ -74,6 +74,25 @@ router.get('/users', async (req, res) => {
   }
 });
 
+router.get('/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    console.error('Fetch user error:', error);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
 router.get('/users/stats', async (req, res) => {
   try {
     const now = new Date();
@@ -158,7 +177,7 @@ router.post('/users', rateLimit.check, async (req, res) => {
 
 router.put('/users/:id', async (req, res) => {
   try {
-    const { username, email, role, isActive } = req.body;
+    const { username, email, role, isActive, subscription } = req.body;
     const userId = req.params.id;
     
     // Don't allow changing own role to prevent locking yourself out
@@ -203,6 +222,15 @@ router.put('/users/:id', async (req, res) => {
     if (email) user.email = email;
     if (role) user.role = role;
     if (typeof isActive === 'boolean') user.isActive = isActive;
+    
+    // Update subscription if provided
+    if (subscription) {
+      if (subscription.type) user.subscription.type = subscription.type;
+      if (subscription.startDate) user.subscription.startDate = new Date(subscription.startDate);
+      if (subscription.endDate) user.subscription.endDate = new Date(subscription.endDate);
+      if (subscription.trialEndDate) user.subscription.trialEndDate = new Date(subscription.trialEndDate);
+      if (subscription.subscriptionType) user.subscription.subscriptionType = subscription.subscriptionType;
+    }
     
     await user.save();
     

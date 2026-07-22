@@ -18,6 +18,8 @@ import GitHubIntegration from './pages/GitHub/GitHubIntegration'
 import Vision from './pages/Vision/Vision'
 import VisionSuccess from './pages/Vision/VisionSuccess'
 import Deployments from './pages/Deployments/Deployments'
+import Payment from './pages/Payment/Payment'
+import PaymentVerification from './pages/Admin/PaymentVerification'
 import LoadingSpinner from './components/UI/LoadingSpinner'
 
 function App() {
@@ -60,6 +62,8 @@ function App() {
         <Route path="vision" element={<Vision />} />
         <Route path="vision/success" element={<VisionSuccess />} />
         <Route path="deployments" element={<Deployments />} />
+        <Route path="payment" element={<Payment />} />
+        <Route path="admin/payments" element={<PaymentVerification />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>

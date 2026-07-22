@@ -117,7 +117,8 @@ const getProfile = async (req, res) => {
         email: user.email,
         role: user.role,
         createdAt: user.createdAt,
-        lastLogin: user.lastLogin
+        lastLogin: user.lastLogin,
+        subscription: user.subscription
       }
     });
   } catch (error) {

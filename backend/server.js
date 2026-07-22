@@ -18,6 +18,7 @@ const visionRoutes = require('./routes/vision');
 const deploymentRoutes = require('./routes/deployment');
 const dockerHubRoutes = require('./routes/dockerHub');
 const deploymentManagementRoutes = require('./routes/deploymentManagement');
+const paymentRoutes = require('./routes/payment');
 
 const app = express();
 
@@ -80,6 +81,9 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files for payment screenshots
+app.use('/uploads', express.static('uploads'));
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://mongodb:27017/mernapp', {
   useNewUrlParser: true,
@@ -102,6 +106,7 @@ app.use('/api/vision', visionRoutes);
 app.use('/api/deployment', deploymentRoutes);
 app.use('/api/dockerhub', dockerHubRoutes);
 app.use('/api/deployments', deploymentManagementRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -34,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ showAuthButtons = true, transparent = f
           <Link to="/" className="flex items-center space-x-2">
             <GitBranch className={`w-8 h-8 ${transparent ? 'text-white' : 'text-white'}`} />
             <span className={`text-xl font-bold ${transparent ? 'text-white' : 'text-white'}`}>
-              InfraPilot.
+              AutoDevOps
             </span>
           </Link>
 

@@ -8,6 +8,13 @@ interface User {
   role: string
   lastLogin?: string
   profilePicture?: string
+  subscription?: {
+    type: string
+    startDate?: string
+    endDate?: string
+    trialEndDate?: string
+    subscriptionType?: string
+  }
 }
 
 interface AuthContextType {
@@ -16,6 +23,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   register: (username: string, email: string, password: string) => Promise<void>
   logout: () => void
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -87,12 +95,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null)
   }
 
+  const refreshUser = async () => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      await fetchUserProfile()
+    }
+  }
+
   const value = {
     user,
     loading,
     login,
     register,
-    logout
+    logout,
+    refreshUser
   }
 
   return (

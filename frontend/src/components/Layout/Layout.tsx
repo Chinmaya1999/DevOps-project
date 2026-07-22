@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
@@ -31,7 +31,8 @@ import {
   Crown,
   ShieldCheck,
   Github,
-  Rocket
+  Rocket,
+  CreditCard
 } from 'lucide-react'
 
 const Layout: React.FC = () => {
@@ -60,12 +61,17 @@ const Layout: React.FC = () => {
   const [uploading, setUploading] = useState(false)
   const [updating, setUpdating] = useState(false)
   const [pemFileName, setPemFileName] = useState('')
-  const { user, logout } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const profileDropdownRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pemFileInputRef = useRef<HTMLInputElement>(null)
+
+  // Refresh user profile when component mounts to get latest subscription status
+  useEffect(() => {
+    refreshUser()
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -216,13 +222,15 @@ const Layout: React.FC = () => {
     { name: 'Terraform Demos', href: '/terraform-demos', icon: Database },
     { name: 'Validator', href: '/validator', icon: CheckCircle },
     { name: 'History', href: '/history', icon: History },
-    
+    { name: 'Upgrade to Premium', href: '/payment', icon: CreditCard },
+
 //  { name: 'DevOps Roadmap', href: '/roadmap', icon: Map }
   ]
 
   const adminNavigation = [
     { name: 'Admin', href: '/admin', icon: Settings },
-    
+    { name: 'Payment Verification', href: '/admin/payments', icon: CreditCard },
+
   ]
 
   const scriptsSubmenu = [
@@ -354,7 +362,7 @@ const Layout: React.FC = () => {
           <div className="flex items-center p-6 border-b border-secondary-200 dark:border-secondary-700">
             <GitBranch className="w-8 h-8 text-primary-600" />
             <span className="ml-2 text-xl font-bold text-secondary-900 dark:text-secondary-100">
-              InfraPilot.       
+              AutoDevOps       
             </span>
           </div>
           <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-200px)]">
@@ -454,6 +462,12 @@ const Layout: React.FC = () => {
               <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                 <BarChart3 className="w-4 h-4 text-blue-500" />
                 <span className="font-medium">Welcome back, {user?.username}</span>
+                {(user?.subscription?.type === 'premium' || user?.subscription?.type === 'trial') && (
+                  <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full shadow-md">
+                    <Crown className="w-3 h-3 mr-1" />
+                    {user?.subscription?.type === 'trial' ? 'Trial' : 'Premium'}
+                  </span>
+                )}
               </div>
               
               <div className="flex items-center space-x-2">

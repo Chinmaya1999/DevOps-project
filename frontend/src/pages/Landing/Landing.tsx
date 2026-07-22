@@ -120,16 +120,16 @@ const Landing: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-900 overflow-hidden">
       <Header transparent={true} />
-      
+
       {/* Hero Section */}
       <section className="relative pt-20 pb-32 overflow-hidden">
         {/* Background Effects */}
         <div className="absolute inset-0">
           <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-animation"></div>
-          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-animation" style={{animationDelay: '2s'}}></div>
-          <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-animation" style={{animationDelay: '4s'}}></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-animation" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-animation" style={{ animationDelay: '4s' }}></div>
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
           <div className="text-center">
             {/* Floating Logo */}
@@ -141,19 +141,19 @@ const Landing: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <h1 className="text-6xl md:text-8xl font-black text-gray-900 dark:text-white mb-6 slide-in-left">
               <span className="block text-gradient animated-gradient">DevOps Pipeline</span>
               <span className="block text-gray-900 dark:text-white text-shadow-lg">Generator</span>
             </h1>
-            
-            <p className="text-2xl md:text-3xl text-gray-600 dark:text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed fade-in-up" style={{animationDelay: '0.2s'}}>
-              Generate <span className="font-bold text-gradient">production-ready</span> DevOps configurations in seconds. 
+
+            <p className="text-2xl md:text-3xl text-gray-600 dark:text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed fade-in-up" style={{ animationDelay: '0.2s' }}>
+              Generate <span className="font-bold text-gradient">production-ready</span> DevOps configurations in seconds.
               <br className="hidden md:block" />
               Jenkins, GitHub Actions, Ansible, Kubernetes, Terraform - all in one powerful platform.
             </p>
-            
-            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16 fade-in-up" style={{animationDelay: '0.4s'}}>
+
+            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16 fade-in-up" style={{ animationDelay: '0.4s' }}>
               <Link
                 to="/register"
                 className="group relative px-10 py-5 hero-gradient text-white font-black text-lg rounded-2xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 overflow-hidden"
@@ -165,7 +165,7 @@ const Landing: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="absolute inset-0 bg-white/20 rounded-2xl transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
               </Link>
-              
+
               <Link
                 to="/login"
                 className="group px-10 py-5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl text-gray-900 dark:text-white font-black text-lg rounded-2xl border-2 border-gray-200 dark:border-gray-700 hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300"
@@ -178,7 +178,7 @@ const Landing: React.FC = () => {
             </div>
 
             {/* Enhanced Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto fade-in-up" style={{animationDelay: '0.6s'}}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto fade-in-up" style={{ animationDelay: '0.6s' }}>
               {stats.map((stat, index) => (
                 <div key={index} className="group text-center p-6 rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300">
                   <div className="text-4xl md:text-5xl font-black text-gradient mb-2">
@@ -214,7 +214,7 @@ const Landing: React.FC = () => {
                 <div
                   key={index}
                   className="group feature-card fade-in-up"
-                  style={{animationDelay: `${index * 0.1}s`}}
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="relative">
                     <div className={`w-20 h-20 hero-gradient rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-xl`}>
@@ -246,13 +246,13 @@ const Landing: React.FC = () => {
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
                 Why Choose
                 <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  {" "}InfraPilot.?
+                  {" "}AutoDevOps?
                 </span>
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
                 Stop wasting time on boilerplate configuration. Focus on what matters - building and deploying great software.
               </p>
-              
+
               <div className="space-y-6">
                 {benefits.map((benefit, index) => {
                   const Icon = benefit.icon
@@ -276,7 +276,7 @@ const Landing: React.FC = () => {
                 })}
               </div>
             </div>
-            
+
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur-xl opacity-20"></div>
               <div className="relative bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl">
@@ -298,7 +298,7 @@ const Landing: React.FC = () => {
                     <div className="text-sm font-medium text-gray-900 dark:text-white">Automated</div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
                     <CheckCircle className="w-5 h-5 text-green-500" />
@@ -402,13 +402,13 @@ const Landing: React.FC = () => {
             <div>
               <div className="flex items-center mb-4">
                 <GitBranch className="w-8 h-8 text-blue-400 mr-2" />
-                <span className="text-xl font-bold">InfraPilot.</span>
+                <span className="text-xl font-bold">AutoDevOps</span>
               </div>
               <p className="text-gray-400">
                 Generate production-ready DevOps configurations in seconds.
               </p>
             </div>
-            
+
             <div>
               <h3 className="font-semibold mb-4">Product</h3>
               <ul className="space-y-2 text-gray-400">
@@ -417,7 +417,7 @@ const Landing: React.FC = () => {
                 <li><Link to="/docs" className="hover:text-white transition-colors">Documentation</Link></li>
               </ul>
             </div>
-            
+
             <div>
               <h3 className="font-semibold mb-4">Company</h3>
               <ul className="space-y-2 text-gray-400">
@@ -426,7 +426,7 @@ const Landing: React.FC = () => {
                 <li><Link to="/careers" className="hover:text-white transition-colors">Careers</Link></li>
               </ul>
             </div>
-            
+
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
@@ -436,21 +436,21 @@ const Landing: React.FC = () => {
               </ul>
             </div>
           </div>
-          
-         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-  <p>&copy; 2024 DevOps Pipeline Generator. All rights reserved.</p>
-  <p className="mt-2 text-sm">
-    Developed by{" "}
-    <a
-      href="https://github.com/Chinmaya1999"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="font-semibold text-blue-400 hover:text-blue-300 transition-colors"
-    >
-      Chinmaya Kumar Mallick
-    </a>
-  </p>
-</div>
+
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+            <p>&copy; 2024 DevOps Pipeline Generator. All rights reserved.</p>
+            <p className="mt-2 text-sm">
+              Developed by{" "}
+              <a
+                href="https://github.com/Chinmaya1999"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                Chinmaya Kumar Mallick
+              </a>
+            </p>
+          </div>
         </div>
       </footer>
     </div>

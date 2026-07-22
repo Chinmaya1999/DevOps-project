@@ -34,6 +34,31 @@ const userSchema = new mongoose.Schema({
   },
   lastLogin: {
     type: Date
+  },
+  subscription: {
+    type: {
+      type: String,
+      enum: ['free', 'premium', 'trial'],
+      default: 'free'
+    },
+    startDate: {
+      type: Date
+    },
+    endDate: {
+      type: Date
+    },
+    trialEndDate: {
+      type: Date
+    },
+    autoRenew: {
+      type: Boolean,
+      default: false
+    },
+    subscriptionType: {
+      type: String,
+      enum: ['monthly', 'yearly'],
+      default: 'monthly'
+    }
   }
 }, {
   timestamps: true
