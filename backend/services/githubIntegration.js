@@ -3,14 +3,19 @@ const axios = require('axios');
 class GitHubIntegration {
   constructor() {
     this.baseURL = 'https://api.github.com';
+    this.axiosInstance = axios.create({
+      timeout: 300000, // 5 minutes timeout for GitHub API calls
+      headers: {
+        Accept: 'application/vnd.github.v3+json'
+      }
+    });
   }
 
   async getUserRepositories(token) {
     try {
-      const response = await axios.get(`${this.baseURL}/user/repos`, {
+      const response = await this.axiosInstance.get(`${this.baseURL}/user/repos`, {
         headers: {
-          Authorization: `token ${token}`,
-          Accept: 'application/vnd.github.v3+json'
+          Authorization: `token ${token}`
         },
         params: {
           per_page: 100,
@@ -25,10 +30,9 @@ class GitHubIntegration {
 
   async getRepositoryDetails(owner, repo, token) {
     try {
-      const response = await axios.get(`${this.baseURL}/repos/${owner}/${repo}`, {
+      const response = await this.axiosInstance.get(`${this.baseURL}/repos/${owner}/${repo}`, {
         headers: {
-          Authorization: `token ${token}`,
-          Accept: 'application/vnd.github.v3+json'
+          Authorization: `token ${token}`
         }
       });
       return response.data;
@@ -66,10 +70,9 @@ class GitHubIntegration {
 
   async getRepositoryLanguages(owner, repo, token) {
     try {
-      const response = await axios.get(`${this.baseURL}/repos/${owner}/${repo}/languages`, {
+      const response = await this.axiosInstance.get(`${this.baseURL}/repos/${owner}/${repo}/languages`, {
         headers: {
-          Authorization: `token ${token}`,
-          Accept: 'application/vnd.github.v3+json'
+          Authorization: `token ${token}`
         }
       });
       return response.data;
@@ -80,10 +83,9 @@ class GitHubIntegration {
 
   async getRepositoryContents(owner, repo, token, path = '') {
     try {
-      const response = await axios.get(`${this.baseURL}/repos/${owner}/${repo}/contents/${path}`, {
+      const response = await this.axiosInstance.get(`${this.baseURL}/repos/${owner}/${repo}/contents/${path}`, {
         headers: {
-          Authorization: `token ${token}`,
-          Accept: 'application/vnd.github.v3+json'
+          Authorization: `token ${token}`
         }
       });
       return response.data;
@@ -94,10 +96,9 @@ class GitHubIntegration {
 
   async getRecentCommits(owner, repo, token) {
     try {
-      const response = await axios.get(`${this.baseURL}/repos/${owner}/${repo}/commits`, {
+      const response = await this.axiosInstance.get(`${this.baseURL}/repos/${owner}/${repo}/commits`, {
         headers: {
-          Authorization: `token ${token}`,
-          Accept: 'application/vnd.github.v3+json'
+          Authorization: `token ${token}`
         },
         params: {
           per_page: 10
@@ -513,10 +514,9 @@ class GitHubIntegration {
 
   async getFileContent(owner, repo, path, token) {
     try {
-      const response = await axios.get(`${this.baseURL}/repos/${owner}/${repo}/contents/${path}`, {
+      const response = await this.axiosInstance.get(`${this.baseURL}/repos/${owner}/${repo}/contents/${path}`, {
         headers: {
-          Authorization: `token ${token}`,
-          Accept: 'application/vnd.github.v3+json'
+          Authorization: `token ${token}`
         }
       });
       
@@ -529,8 +529,13 @@ class GitHubIntegration {
     }
   }
 
-  async getFileStructure(owner, repo, token, path = '') {
+  async getFileStructure(owner, repo, token, path = '', depth = 0, maxDepth = 3) {
     try {
+      // Limit recursion depth to prevent timeout on large repos
+      if (depth > maxDepth) {
+        return [];
+      }
+
       const contents = await this.getRepositoryContents(owner, repo, token, path);
       
       if (!Array.isArray(contents)) {
@@ -541,7 +546,7 @@ class GitHubIntegration {
       
       for (const item of contents) {
         if (item.type === 'dir') {
-          const children = await this.getFileStructure(owner, repo, token, item.path);
+          const children = await this.getFileStructure(owner, repo, token, item.path, depth + 1, maxDepth);
           structure.push({
             name: item.name,
             path: item.path,
@@ -568,24 +573,22 @@ class GitHubIntegration {
   async updateFileContent(owner, repo, token, path, content, message) {
     try {
       // First get the current file to get the SHA
-      const currentFile = await axios.get(`${this.baseURL}/repos/${owner}/${repo}/contents/${path}`, {
+      const currentFile = await this.axiosInstance.get(`${this.baseURL}/repos/${owner}/${repo}/contents/${path}`, {
         headers: {
-          Authorization: `token ${token}`,
-          Accept: 'application/vnd.github.v3+json'
+          Authorization: `token ${token}`
         }
       });
 
       const sha = currentFile.data.sha;
       const encodedContent = Buffer.from(content).toString('base64');
 
-      const response = await axios.put(`${this.baseURL}/repos/${owner}/${repo}/contents/${path}`, {
+      const response = await this.axiosInstance.put(`${this.baseURL}/repos/${owner}/${repo}/contents/${path}`, {
         message: message || `Update ${path}`,
         content: encodedContent,
         sha: sha
       }, {
         headers: {
-          Authorization: `token ${token}`,
-          Accept: 'application/vnd.github.v3+json'
+          Authorization: `token ${token}`
         }
       });
 
@@ -652,10 +655,9 @@ class GitHubIntegration {
 
   async getRepositoryBranches(owner, repo, token) {
     try {
-      const response = await axios.get(`${this.baseURL}/repos/${owner}/${repo}/branches`, {
+      const response = await this.axiosInstance.get(`${this.baseURL}/repos/${owner}/${repo}/branches`, {
         headers: {
-          Authorization: `token ${token}`,
-          Accept: 'application/vnd.github.v3+json'
+          Authorization: `token ${token}`
         },
         params: {
           per_page: 100
@@ -669,10 +671,9 @@ class GitHubIntegration {
 
   async getRepositoryCommits(owner, repo, token, branch = 'main', limit = 10) {
     try {
-      const response = await axios.get(`${this.baseURL}/repos/${owner}/${repo}/commits`, {
+      const response = await this.axiosInstance.get(`${this.baseURL}/repos/${owner}/${repo}/commits`, {
         headers: {
-          Authorization: `token ${token}`,
-          Accept: 'application/vnd.github.v3+json'
+          Authorization: `token ${token}`
         },
         params: {
           sha: branch,
