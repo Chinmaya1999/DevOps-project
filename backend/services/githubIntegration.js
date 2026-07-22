@@ -514,6 +514,7 @@ class GitHubIntegration {
 
   async getFileContent(owner, repo, path, token) {
     try {
+      // First try the GitHub Contents API
       const response = await this.axiosInstance.get(`${this.baseURL}/repos/${owner}/${repo}/contents/${path}`, {
         headers: {
           Authorization: `token ${token}`
@@ -538,9 +539,16 @@ class GitHubIntegration {
         return rawResponse.data;
       }
       
-      // If no content and no download_url, file might be too large or in git LFS
-      console.warn('File exists but no content or download_url:', response.data);
-      return null;
+      // Fallback: Try raw.githubusercontent.com directly
+      console.log('Trying fallback to raw.githubusercontent.com');
+      const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
+      const fallbackResponse = await this.axiosInstance.get(rawUrl, {
+        headers: {
+          Authorization: `token ${token}`
+        }
+      });
+      return fallbackResponse.data;
+      
     } catch (error) {
       console.error('Error fetching file content:', error.response?.data || error.message);
       return null;
