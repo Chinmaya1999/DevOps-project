@@ -520,11 +520,29 @@ class GitHubIntegration {
         }
       });
       
+      console.log('GitHub API response for file content:', response.data);
+      
+      // If content is available, decode it
       if (response.data.content) {
         return Buffer.from(response.data.content, 'base64').toString('utf-8');
       }
+      
+      // If no content but there's a download_url, try fetching from there
+      if (response.data.download_url) {
+        console.log('Fetching content from download_url:', response.data.download_url);
+        const rawResponse = await this.axiosInstance.get(response.data.download_url, {
+          headers: {
+            Authorization: `token ${token}`
+          }
+        });
+        return rawResponse.data;
+      }
+      
+      // If no content and no download_url, file might be too large or in git LFS
+      console.warn('File exists but no content or download_url:', response.data);
       return null;
     } catch (error) {
+      console.error('Error fetching file content:', error.response?.data || error.message);
       return null;
     }
   }
