@@ -258,18 +258,17 @@ router.put('/verify/:paymentId', auth, adminAuth, async (req, res) => {
       payment.verifiedBy = req.user._id;
       payment.verifiedAt = new Date();
 
-      // Update user subscription with 5-day trial period
+      // Update user subscription to premium (not trial)
       const user = payment.user;
       const now = new Date();
       const subscriptionDuration = payment.subscriptionType === 'monthly' ? 30 : 365;
-      const trialDuration = 5; // 5 days trial
       
-      // Set trial period
-      user.subscription.type = 'trial';
+      // Set premium subscription directly
+      user.subscription.type = 'premium';
       user.subscription.startDate = now;
-      user.subscription.trialEndDate = new Date(now.getTime() + trialDuration * 24 * 60 * 60 * 1000);
       user.subscription.endDate = new Date(now.getTime() + subscriptionDuration * 24 * 60 * 60 * 1000);
       user.subscription.subscriptionType = payment.subscriptionType;
+      user.subscription.autoRenew = false;
       
       await user.save();
     } else {

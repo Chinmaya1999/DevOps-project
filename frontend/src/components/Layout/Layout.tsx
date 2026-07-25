@@ -40,6 +40,7 @@ const Layout: React.FC = () => {
   const [scriptsDropdownOpen, setScriptsDropdownOpen] = useState(false)
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
   const [profileModalOpen, setProfileModalOpen] = useState(false)
+  const [subscriptionPopupOpen, setSubscriptionPopupOpen] = useState(false)
   const [profileData, setProfileData] = useState({
     username: '',
     email: '',
@@ -72,6 +73,24 @@ const Layout: React.FC = () => {
   useEffect(() => {
     refreshUser()
   }, [])
+
+  // Check for expired trial and show subscription popup
+  useEffect(() => {
+    // Don't show popup on payment page
+    if (location.pathname === '/payment') {
+      setSubscriptionPopupOpen(false)
+      return
+    }
+
+    if (user?.subscription?.type === 'trial' && user?.subscription?.trialEndDate) {
+      const now = new Date()
+      const trialEndDate = new Date(user.subscription.trialEndDate)
+      if (now > trialEndDate) {
+        // Trial has expired, show popup
+        setSubscriptionPopupOpen(true)
+      }
+    }
+  }, [user, location.pathname])
 
   const handleLogout = () => {
     logout()
@@ -462,10 +481,10 @@ const Layout: React.FC = () => {
               <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                 <BarChart3 className="w-4 h-4 text-blue-500" />
                 <span className="font-medium">Welcome back, {user?.username}</span>
-                {(user?.subscription?.type === 'premium' || user?.subscription?.type === 'trial') && (
+                {user?.subscription?.type === 'premium' && (
                   <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full shadow-md">
                     <Crown className="w-3 h-3 mr-1" />
-                    {user?.subscription?.type === 'trial' ? 'Trial' : 'Premium'}
+                    Premium
                   </span>
                 )}
               </div>
@@ -833,6 +852,38 @@ const Layout: React.FC = () => {
                 ) : (
                   'Save Changes'
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Subscription Popup Modal */}
+      {subscriptionPopupOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center">Trial Expired</h2>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <Crown className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  Your 5-day free trial has expired. To continue accessing premium features, please upgrade to a premium subscription.
+                </p>
+              </div>
+              
+              <button
+                onClick={() => {
+                  setSubscriptionPopupOpen(false)
+                  navigate('/payment')
+                }}
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300"
+              >
+                Upgrade to Premium
               </button>
             </div>
           </div>
