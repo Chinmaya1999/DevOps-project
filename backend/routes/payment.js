@@ -54,9 +54,16 @@ const PAYMENT_CONFIG = {
 
 // Get payment configuration (public)
 router.get('/config', (req, res) => {
+  const host = req.get('host');
+  const protocol = req.protocol;
+  const fullQrCodeUrl = `${protocol}://${host}${PAYMENT_CONFIG.upiQRCode}`;
+  
   res.json({
     success: true,
-    data: PAYMENT_CONFIG
+    data: {
+      ...PAYMENT_CONFIG,
+      upiQRCode: fullQrCodeUrl
+    }
   });
 });
 
