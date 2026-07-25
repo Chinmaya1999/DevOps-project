@@ -73,11 +73,24 @@ app.use(cors({
 // Handle preflight requests
 app.options('*', cors());
 
-// Rate limiting
+// Rate limiting - increased limits for production
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Increased from 100 to 1000 requests per window
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
+
+// More lenient rate limiter for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // Allow 200 auth requests per 15 minutes
+  message: 'Too many authentication attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(limiter);
 
 // Body parser middleware
@@ -101,7 +114,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://mongodb:27017/mernapp', {
 .catch((err) => console.error('MongoDB connection error:', err));
 
 // Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes); // Apply more lenient rate limiting to auth routes
 app.use('/api/generate', generateRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/validate', validateRoutes);

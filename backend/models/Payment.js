@@ -9,7 +9,7 @@ const paymentSchema = new mongoose.Schema({
   amount: {
     type: Number,
     required: true,
-    default: 999 // Default subscription price
+    default: 199 // Default subscription price
   },
   currency: {
     type: String,

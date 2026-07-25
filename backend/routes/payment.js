@@ -47,8 +47,8 @@ const PAYMENT_CONFIG = {
     bankName: 'AIRTEL PAYMENTS BANK'
   },
   pricing: {
-    monthly: 999,
-    yearly: 9999
+    monthly: 199,
+    yearly: 2999
   }
 };
 
