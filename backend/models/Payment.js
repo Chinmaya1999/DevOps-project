@@ -7,6 +7,11 @@ const paymentSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  paymentNumber: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
   amount: {
     type: Number,
     required: true,
@@ -74,6 +79,5 @@ paymentSchema.pre('save', async function(next) {
 // Index for faster queries
 paymentSchema.index({ user: 1, status: 1 });
 paymentSchema.index({ status: 1, createdAt: -1 });
-paymentSchema.index({ paymentNumber: 1 });
 
 module.exports = mongoose.model('Payment', paymentSchema);
