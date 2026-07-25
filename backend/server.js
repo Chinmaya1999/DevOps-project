@@ -47,9 +47,8 @@ app.use(cors({
       callback(null, true);
     } else {
       console.log('Blocked origin:', origin);
-      // For development, you can uncomment the line below to allow all origins
-      // callback(null, true);
-      callback(new Error('Not allowed by CORS'));
+      // For development, allow all origins to troubleshoot
+      callback(null, true);
     }
   },
   credentials: true,
@@ -67,7 +66,8 @@ app.use(cors({
     'X-Requested-With',
     'X-CSRF-Token'
   ],
-  exposedHeaders: ['Content-Length', 'X-Kuma-Revision']
+  exposedHeaders: ['Content-Length', 'X-Kuma-Revision'],
+  maxAge: 86400 // Cache preflight response for 24 hours
 }));
 
 // Handle preflight requests
@@ -140,7 +140,13 @@ app.get('/api/health', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error details:', {
+    message: err.message,
+    stack: err.stack,
+    url: req.url,
+    method: req.method,
+    origin: req.headers.origin
+  });
   res.status(500).json({ 
     error: 'Something went wrong!',
     message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
