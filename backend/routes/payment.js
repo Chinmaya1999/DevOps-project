@@ -1,16 +1,23 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { auth, adminAuth } = require('../middleware/auth');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
 
 const router = express.Router();
 
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, '../uploads/payments');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true, mode: 0o755 });
+}
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/payments/');
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
