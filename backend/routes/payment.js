@@ -56,7 +56,8 @@ const PAYMENT_CONFIG = {
 router.get('/config', (req, res) => {
   const host = req.get('host');
   const protocol = req.protocol;
-  const fullQrCodeUrl = `${protocol}://${host}${PAYMENT_CONFIG.upiQRCode}`;
+  // Use the dedicated QR code endpoint instead of static file
+  const fullQrCodeUrl = `${protocol}://${host}/api/payment/qrcode`;
   
   res.json({
     success: true,
@@ -65,6 +66,29 @@ router.get('/config', (req, res) => {
       upiQRCode: fullQrCodeUrl
     }
   });
+});
+
+// Serve QR code image with proper headers
+router.get('/qrcode', (req, res) => {
+  const path = require('path');
+  const fs = require('fs');
+  const qrCodePath = path.join(__dirname, '../uploads/qrcode.png');
+  
+  // Check if file exists
+  if (fs.existsSync(qrCodePath)) {
+    // Set proper headers to allow cross-origin loading
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    
+    // Send the file
+    res.sendFile(qrCodePath);
+  } else {
+    res.status(404).json({ error: 'QR code image not found' });
+  }
 });
 
 // Submit payment request (authenticated users)
