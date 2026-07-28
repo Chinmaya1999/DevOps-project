@@ -17,7 +17,7 @@ services:
     ports:
       - "5001:5001"
     env_file:
-      - backend/.env
+      - .env
     networks:
       - app-network
 

@@ -43,41 +43,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check for OAuth token in URL
-    const urlParams = new URLSearchParams(window.location.search)
-    const oauthToken = urlParams.get('token')
-    const isGoogle = urlParams.get('google') === 'true'
-    const isGithub = urlParams.get('github') === 'true'
-    const isOAuth = isGoogle || isGithub
+    const initializeAuth = async () => {
+      // Check for OAuth token in URL
+      const urlParams = new URLSearchParams(window.location.search)
+      const oauthToken = urlParams.get('token')
+      const isGoogle = urlParams.get('google') === 'true'
+      const isGithub = urlParams.get('github') === 'true'
+      const isOAuth = isGoogle || isGithub
 
-    const token = oauthToken || localStorage.getItem('token')
-    
-    if (token) {
-      localStorage.setItem('token', token)
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      fetchUserProfile()
+      console.log('AuthContext: Initializing auth', { oauthToken, isGoogle, isGithub, isOAuth })
+
+      const token = oauthToken || localStorage.getItem('token') || sessionStorage.getItem('token')
       
-      // Show success toast and clean URL if it was OAuth
-      if (isOAuth) {
-        if (isGoogle) {
-          toast.success('Google login successful!')
-        } else if (isGithub) {
-          toast.success('GitHub login successful!')
+      if (token) {
+        console.log('AuthContext: Token found, storing and fetching profile')
+        // Store token in both localStorage and sessionStorage
+        localStorage.setItem('token', token)
+        sessionStorage.setItem('token', token)
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+        
+        // Fetch user profile
+        await fetchUserProfile()
+        
+        // Show success toast and clean URL if it was OAuth
+        if (isOAuth) {
+          console.log('AuthContext: OAuth login successful')
+          if (isGoogle) {
+            toast.success('Google login successful!')
+          } else if (isGithub) {
+            toast.success('GitHub login successful!')
+          }
+          // Clean URL parameters
+          window.history.replaceState({}, document.title, '/dashboard')
         }
-        window.history.replaceState({}, document.title, '/dashboard')
+      } else {
+        console.log('AuthContext: No token found')
+        setLoading(false)
       }
-    } else {
-      setLoading(false)
     }
+
+    initializeAuth()
   }, [])
 
   const fetchUserProfile = async () => {
     try {
+      console.log('AuthContext: Fetching user profile')
       const response = await api.get('/auth/profile')
+      console.log('AuthContext: User profile fetched successfully', response.data.user)
       setUser(response.data.user)
     } catch (error) {
-      console.error('Failed to fetch user profile:', error)
+      console.error('AuthContext: Failed to fetch user profile:', error)
+      // Remove token from both storage locations on error
       localStorage.removeItem('token')
+      sessionStorage.removeItem('token')
       delete api.defaults.headers.common['Authorization']
     } finally {
       setLoading(false)
@@ -89,7 +107,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await api.post('/auth/login', { email, password })
       const { user: userData, token } = response.data
       
+      // Store token in both localStorage and sessionStorage
       localStorage.setItem('token', token)
+      sessionStorage.setItem('token', token)
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
       setUser(userData)
     } catch (error: any) {
@@ -102,7 +122,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await api.post('/auth/register', { username, email, password, workExperience, domains })
       const { user: userData, token } = response.data
       
+      // Store token in both localStorage and sessionStorage
       localStorage.setItem('token', token)
+      sessionStorage.setItem('token', token)
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
       setUser(userData)
     } catch (error: any) {
@@ -111,7 +133,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const logout = () => {
+    // Remove token from both localStorage and sessionStorage
     localStorage.removeItem('token')
+    sessionStorage.removeItem('token')
     delete api.defaults.headers.common['Authorization']
     setUser(null)
   }
@@ -124,7 +148,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const setToken = (token: string) => {
+    // Store token in both localStorage and sessionStorage
     localStorage.setItem('token', token)
+    sessionStorage.setItem('token', token)
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`
     fetchUserProfile()
   }
