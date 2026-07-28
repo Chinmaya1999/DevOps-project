@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -20,8 +21,12 @@ const dockerHubRoutes = require('./routes/dockerHub');
 const deploymentManagementRoutes = require('./routes/deploymentManagement');
 const paymentRoutes = require('./routes/payment');
 const contactRoutes = require('./routes/contact');
+const chatRoutes = require('./routes/chat');
+const { initializeSocket } = require('./socket');
 
 const app = express();
+const server = http.createServer(app);
+initializeSocket(server);
 
 // Security middleware
 app.use(helmet({
@@ -130,6 +135,7 @@ app.use('/api/dockerhub', dockerHubRoutes);
 app.use('/api/deployments', deploymentManagementRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -161,6 +167,6 @@ app.use('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });

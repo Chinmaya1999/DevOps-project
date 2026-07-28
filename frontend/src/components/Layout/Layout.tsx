@@ -32,7 +32,8 @@ import {
   ShieldCheck,
   Github,
   Rocket,
-  CreditCard
+  CreditCard,
+  MessageSquare
 } from 'lucide-react'
 
 const Layout: React.FC = () => {
@@ -232,6 +233,7 @@ const Layout: React.FC = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Collaboration Hub', href: '/chat', icon: MessageSquare },
     { name: 'Vision - One-Click Deploy', href: '/vision', icon: Rocket },
     { name: 'Deployments', href: '/deployments', icon: Server },
     { name: 'GitHub Integration', href: '/github', icon: Github },

@@ -20,7 +20,11 @@ import {
   XCircle,
   Eye,
   EyeOff,
-  X
+  X,
+  MessageSquare,
+  Award,
+  HelpCircle,
+  TrendingUp
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../../services/api'
@@ -102,7 +106,7 @@ interface TerraformDashboardStats {
 }
 
 const Admin: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'docs' | 'create' | 'terraform' | 'users'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'docs' | 'create' | 'terraform' | 'users' | 'chat'>('dashboard')
   const [users, setUsers] = useState<AppUser[]>([])
   const [userStats, setUserStats] = useState<UserManagementStats | null>(null)
   const [editingUser, setEditingUser] = useState<AppUser | null>(null)
@@ -122,6 +126,7 @@ const Admin: React.FC = () => {
   const [terraformTemplates, setTerraformTemplates] = useState<TerraformTemplate[]>([])
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [terraformStats, setTerraformStats] = useState<TerraformDashboardStats | null>(null)
+  const [chatStats, setChatStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [editingDoc, setEditingDoc] = useState<DevOpsDoc | null>(null)
   const [editingTemplate, setEditingTemplate] = useState<TerraformTemplate | null>(null)
@@ -199,6 +204,8 @@ const Admin: React.FC = () => {
     } else if (activeTab === 'users') {
       fetchUsers()
       fetchUserStats()
+    } else if (activeTab === 'chat') {
+      fetchChatStats()
     }
     setLoading(false)
   }, [activeTab])
@@ -368,6 +375,15 @@ const Admin: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching terraform dashboard stats:', error)
+    }
+  }
+
+  const fetchChatStats = async () => {
+    try {
+      const response = await api.get('/chat/admin/stats')
+      setChatStats(response.data)
+    } catch (error) {
+      console.error('Error fetching chat stats:', error)
     }
   }
 
@@ -631,6 +647,17 @@ const Admin: React.FC = () => {
             >
               <Globe className="w-4 h-4 inline mr-2" />
               Terraform Templates
+            </button>
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'chat'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-secondary-500 hover:text-secondary-700 dark:hover:text-secondary-300'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4 inline mr-2" />
+              Chat Analytics
             </button>
           </div>
         </div>
@@ -1510,6 +1537,172 @@ const Admin: React.FC = () => {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Chat Analytics Tab */}
+        {activeTab === 'chat' && chatStats && (
+          <div className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                    <MessageSquare className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-secondary-600 dark:text-secondary-400">Total Chats</p>
+                    <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">{chatStats.totalChats}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
+                    <FileText className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-secondary-600 dark:text-secondary-400">Total Messages</p>
+                    <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">{chatStats.totalMessages}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                    <HelpCircle className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-secondary-600 dark:text-secondary-400">Questions Asked</p>
+                    <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">{chatStats.totalQuestions}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                    <CheckCircle className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-secondary-600 dark:text-secondary-400">Questions Solved</p>
+                    <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">{chatStats.solvedQuestions}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-pink-100 dark:bg-pink-900 rounded-lg">
+                    <Users className="w-6 h-6 text-pink-600 dark:text-pink-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-secondary-600 dark:text-secondary-400">Collaboration Requests</p>
+                    <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">{chatStats.totalCollaborationRequests}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-teal-100 dark:bg-teal-900 rounded-lg">
+                    <CheckCircle className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-secondary-600 dark:text-secondary-400">Accepted Collaborations</p>
+                    <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">{chatStats.acceptedCollaborations}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
+                    <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-secondary-600 dark:text-secondary-400">Active Users</p>
+                    <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">{chatStats.activeUsers}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
+                    <User className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-secondary-600 dark:text-secondary-400">Total Users</p>
+                    <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">{chatStats.totalUsers}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Top Contributors */}
+            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+              <h3 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4 flex items-center">
+                <Award className="w-5 h-5 mr-2 text-yellow-500" />
+                Top Contributors
+              </h3>
+              <div className="space-y-3">
+                {chatStats.topContributors?.map((contributor: any, index: number) => (
+                  <div
+                    key={contributor._id}
+                    className={`flex items-center space-x-3 p-3 rounded-lg ${
+                      index === 0 ? 'bg-yellow-100 dark:bg-yellow-900' :
+                      index === 1 ? 'bg-gray-200 dark:bg-gray-700' :
+                      index === 2 ? 'bg-orange-100 dark:bg-orange-900' :
+                      'bg-gray-50 dark:bg-gray-800'
+                    }`}
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center font-bold text-secondary-900 dark:text-secondary-100">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-secondary-900 dark:text-secondary-100">{contributor.user?.username}</p>
+                      <p className="text-sm text-secondary-600 dark:text-secondary-400">{contributor.questionsSolved} questions solved</p>
+                    </div>
+                    <div className="flex items-center space-x-1 text-yellow-500">
+                      <Award className="w-5 h-5" />
+                      <span className="font-bold">{contributor.points}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Messages */}
+            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+              <h3 className="text-xl font-bold text-secondary-900 dark:text-secondary-100 mb-4 flex items-center">
+                <MessageSquare className="w-5 h-5 mr-2 text-blue-500" />
+                Recent Messages
+              </h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {chatStats.recentMessages?.map((message: any) => (
+                  <div key={message._id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-secondary-900 dark:text-secondary-100">{message.sender?.username}</span>
+                      <span className="text-xs text-secondary-500 dark:text-secondary-400">
+                        {new Date(message.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-secondary-600 dark:text-secondary-400">{message.content}</p>
+                    {message.isQuestion && (
+                      <div className="mt-2 flex items-center space-x-2">
+                        <HelpCircle className="w-4 h-4 text-purple-500" />
+                        <span className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 px-2 py-1 rounded-full">
+                          Question {message.isSolved ? '✓ Solved' : ''}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

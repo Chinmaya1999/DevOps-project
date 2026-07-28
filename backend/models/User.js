@@ -59,6 +59,13 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
+  isOnline: {
+    type: Boolean,
+    default: false
+  },
+  lastSeen: {
+    type: Date
+  },
   subscription: {
     type: {
       type: String,

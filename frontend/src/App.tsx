@@ -24,6 +24,7 @@ import Contact from './pages/Contact/Contact'
 import Features from './pages/Features/Features'
 import Pricing from './pages/Pricing/Pricing'
 import About from './pages/About/About'
+import Chat from './pages/Chat/Chat'
 import LoadingSpinner from './components/UI/LoadingSpinner'
 
 function App() {
@@ -57,6 +58,7 @@ function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="chat" element={<Chat />} />
         <Route path="generator/:type" element={<Generator />} />
         <Route path="devops-docs" element={<DevOpsDocs />} />
         <Route path="devops-docs/:id" element={<DevOpsDocDetail />} />
