@@ -10,12 +10,19 @@ const { auth } = require('../middleware/auth');
 // Get all users for collaboration
 router.get('/users', auth, async (req, res) => {
   try {
+    const currentUser = await User.findById(req.user._id).select('friends');
     const users = await User.find({ 
       _id: { $ne: req.user._id },
       isActive: true 
     }).select('username email workExperience domains isOnline lastSeen avatar');
     
-    res.json(users);
+    // Add isFriend flag to each user
+    const usersWithFriendStatus = users.map(user => ({
+      ...user.toObject(),
+      isFriend: currentUser.friends?.includes(user._id) || false
+    }));
+    
+    res.json(usersWithFriendStatus);
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -304,7 +311,7 @@ router.put('/collaboration-request/:requestId', auth, async (req, res) => {
     request.status = status;
     await request.save();
 
-    // If accepted, create a chat
+    // If accepted, create a chat and add to friends list
     if (status === 'accepted') {
       let chat = await Chat.findOne({
         participants: { $all: [request.from, request.to] },
@@ -318,6 +325,14 @@ router.put('/collaboration-request/:requestId', auth, async (req, res) => {
         });
         await chat.save();
       }
+
+      // Add users to each other's friends list
+      await User.findByIdAndUpdate(request.from, {
+        $addToSet: { friends: request.to }
+      });
+      await User.findByIdAndUpdate(request.to, {
+        $addToSet: { friends: request.from }
+      });
 
       await chat.populate('participants', 'username email avatar isOnline lastSeen workExperience domains');
       return res.json({ request, chat });

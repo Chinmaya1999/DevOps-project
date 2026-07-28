@@ -8,6 +8,7 @@ import {
   Paperclip,
   Search,
   UserPlus,
+  UserCheck,
   Star,
   Award,
   HelpCircle,
@@ -26,6 +27,7 @@ interface User {
   domains: string[]
   isOnline: boolean
   lastSeen?: string
+  isFriend?: boolean
 }
 
 interface Message {
@@ -84,6 +86,9 @@ const Chat: React.FC = () => {
   const [userPoints, setUserPoints] = useState<any>(null)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [leaderboard, setLeaderboard] = useState<any[]>([])
+  const [showGroupModal, setShowGroupModal] = useState(false)
+  const [groupName, setGroupName] = useState('')
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -458,6 +463,44 @@ const Chat: React.FC = () => {
     }
   }
 
+  const handleCreateGroup = async () => {
+    if (!groupName.trim() || selectedUsers.length === 0) {
+      toast.error('Please enter a group name and select at least one user')
+      return
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/group`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ name: groupName, participantIds: selectedUsers })
+      })
+
+      if (response.ok) {
+        const chat = await response.json()
+        setChats(prev => [chat, ...prev])
+        setShowGroupModal(false)
+        setGroupName('')
+        setSelectedUsers([])
+        toast.success('Group chat created successfully!')
+      }
+    } catch (error) {
+      console.error('Error creating group:', error)
+      toast.error('Failed to create group chat')
+    }
+  }
+
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    )
+  }
+
   const handleTyping = () => {
     if (socket && selectedChat) {
       socket.emit('typing', { chatId: selectedChat._id })
@@ -544,6 +587,13 @@ const Chat: React.FC = () => {
                   {pendingRequests.length}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => setShowGroupModal(true)}
+              className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-purple-600 text-white hover:bg-purple-700"
+            >
+              <Users className="w-4 h-4 inline mr-1" />
+              Group
             </button>
           </div>
         </div>
@@ -663,13 +713,24 @@ const Chat: React.FC = () => {
                       <MessageSquare className="w-4 h-4 inline mr-1" />
                       Chat
                     </button>
-                    <button
-                      onClick={() => handleSendCollaborationRequest(userItem._id)}
-                      className="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
-                    >
-                      <UserPlus className="w-4 h-4 inline mr-1" />
-                      Request
-                    </button>
+                    {!userItem.isFriend && (
+                      <button
+                        onClick={() => handleSendCollaborationRequest(userItem._id)}
+                        className="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+                      >
+                        <UserPlus className="w-4 h-4 inline mr-1" />
+                        Request
+                      </button>
+                    )}
+                    {userItem.isFriend && (
+                      <button
+                        className="flex-1 bg-gray-600 text-white px-3 py-2 rounded-lg cursor-default text-sm"
+                        disabled
+                      >
+                        <UserCheck className="w-4 h-4 inline mr-1" />
+                        Friend
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -943,6 +1004,80 @@ const Chat: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Group Creation Modal */}
+      {showGroupModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Create Group Chat</h2>
+                <button
+                  onClick={() => setShowGroupModal(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Group Name
+                  </label>
+                  <input
+                    type="text"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter group name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Select Members
+                  </label>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {filteredUsers.map(userItem => (
+                      <div
+                        key={userItem._id}
+                        onClick={() => toggleUserSelection(userItem._id)}
+                        className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                          selectedUsers.includes(userItem._id)
+                            ? 'bg-purple-100 dark:bg-purple-900 border-2 border-purple-500'
+                            : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
+                            {userItem.avatar ? (
+                              <img src={userItem.avatar} alt={userItem.username} className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                              userItem.username.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">{userItem.username}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{userItem.email}</p>
+                          </div>
+                          {selectedUsers.includes(userItem._id) && (
+                            <Check className="w-5 h-5 text-purple-600" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={handleCreateGroup}
+                  className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                >
+                  Create Group
+                </button>
               </div>
             </div>
           </div>
