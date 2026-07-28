@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { api } from '../services/api'
+import toast from 'react-hot-toast'
 
 interface User {
   id: string
@@ -42,10 +43,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
+    // Check for OAuth token in URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const oauthToken = urlParams.get('token')
+    const isGoogle = urlParams.get('google') === 'true'
+    const isGithub = urlParams.get('github') === 'true'
+    const isOAuth = isGoogle || isGithub
+
+    const token = oauthToken || localStorage.getItem('token')
+    
     if (token) {
+      localStorage.setItem('token', token)
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
       fetchUserProfile()
+      
+      // Show success toast and clean URL if it was OAuth
+      if (isOAuth) {
+        if (isGoogle) {
+          toast.success('Google login successful!')
+        } else if (isGithub) {
+          toast.success('GitHub login successful!')
+        }
+        window.history.replaceState({}, document.title, '/dashboard')
+      }
     } else {
       setLoading(false)
     }

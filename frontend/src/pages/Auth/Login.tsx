@@ -13,27 +13,16 @@ const Login: React.FC = () => {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const { login, user, setToken } = useAuth()
+  const { login, user } = useAuth()
 
-  // Handle OAuth callback
+  // Handle OAuth error
   useEffect(() => {
-    const token = searchParams.get('token')
-    const github = searchParams.get('github')
-    const google = searchParams.get('google')
-    
-    if (token && (github === 'true' || google === 'true')) {
-      localStorage.setItem('token', token)
-      setToken(token)
-      toast.success(`${github === 'true' ? 'GitHub' : 'Google'} login successful!`)
-      window.location.href = '/dashboard'
-    }
-    
     const error = searchParams.get('error')
     if (error) {
       toast.error('OAuth login failed. Please try again.')
       window.history.replaceState({}, document.title, '/login')
     }
-  }, [searchParams, setToken])
+  }, [searchParams])
 
   if (user) {
     return <Navigate to="/dashboard" replace />
