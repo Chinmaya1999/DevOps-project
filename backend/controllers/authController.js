@@ -1,7 +1,101 @@
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
+const nodemailer = require('nodemailer');
 const User = require('../models/User');
 const { registerSchema, loginSchema } = require('../utils/validators');
+
+// Configure email transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER || 'chinmaya.dob1999@gmail.com',
+    pass: process.env.EMAIL_PASSWORD || 'mnzb ndts msgu tobw'
+  }
+});
+
+// Send welcome email
+const sendWelcomeEmail = async (email, username) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'chinmaya.dob1999@gmail.com',
+      to: email,
+      subject: 'Welcome to AutoDevOps - Your DevOps Journey Starts Here! 🚀',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
+          <div style="background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <span style="font-size: 40px;">⚡</span>
+              </div>
+              <h1 style="color: #333; margin: 0; font-size: 28px; font-weight: bold;">Welcome to AutoDevOps!</h1>
+              <p style="color: #666; margin: 10px 0 0; font-size: 16px;">Your DevOps journey starts here</p>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 15px; margin: 25px 0; border-left: 4px solid #667eea;">
+              <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.6;">
+                Hello <strong>${username}</strong>,
+              </p>
+              <p style="margin: 15px 0 0; color: #555; font-size: 15px; line-height: 1.6;">
+                Thank you for joining AutoDevOps! We're excited to have you on board. You now have access to powerful DevOps tools that will help you:
+              </p>
+              <ul style="margin: 20px 0; padding-left: 20px; color: #555;">
+                <li style="margin-bottom: 10px;">🚀 Deploy applications with one click</li>
+                <li style="margin-bottom: 10px;">📦 Generate production-ready Terraform templates</li>
+                <li style="margin-bottom: 10px;">🔧 Create Jenkins CI/CD pipelines automatically</li>
+                <li style="margin-bottom: 10px;">🐳 Deploy Docker containers to any registry</li>
+                <li style="margin-bottom: 10px;">☸️ Generate Kubernetes YAML configurations</li>
+                <li>👥 Collaborate with the DevOps community</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin: 35px 0;">
+              <a href="https://cmcloud.online/dashboard" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
+                Get Started Now →
+              </a>
+            </div>
+            
+            <div style="border-top: 1px solid #eee; padding-top: 25px; margin-top: 30px;">
+              <h3 style="color: #333; margin: 0 0 15px; font-size: 18px;">Quick Start Guide</h3>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div style="background: #f0f4ff; padding: 15px; border-radius: 10px;">
+                  <div style="font-weight: bold; color: #667eea; margin-bottom: 5px;">Step 1</div>
+                  <div style="color: #555; font-size: 14px;">Explore the dashboard</div>
+                </div>
+                <div style="background: #f0f4ff; padding: 15px; border-radius: 10px;">
+                  <div style="font-weight: bold; color: #667eea; margin-bottom: 5px;">Step 2</div>
+                  <div style="color: #555; font-size: 14px;">Generate your first template</div>
+                </div>
+                <div style="background: #f0f4ff; padding: 15px; border-radius: 10px;">
+                  <div style="font-weight: bold; color: #667eea; margin-bottom: 5px;">Step 3</div>
+                  <div style="color: #555; font-size: 14px;">Deploy to production</div>
+                </div>
+                <div style="background: #f0f4ff; padding: 15px; border-radius: 10px;">
+                  <div style="font-weight: bold; color: #667eea; margin-bottom: 5px;">Step 4</div>
+                  <div style="color: #555; font-size: 14px;">Join the community chat</div>
+                </div>
+              </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 35px; padding-top: 25px; border-top: 1px solid #eee;">
+              <p style="color: #888; font-size: 14px; margin: 0;">
+                Need help? Contact us at <a href="mailto:support@cmcloud.online" style="color: #667eea; text-decoration: none;">support@cmcloud.online</a>
+              </p>
+              <p style="color: #888; font-size: 13px; margin: 15px 0 0;">
+                © 2026 AutoDevOps. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Welcome email sent to ${email}`);
+  } catch (error) {
+    console.error('Error sending welcome email:', error);
+    // Don't throw error to prevent registration from failing
+  }
+};
 
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -40,6 +134,9 @@ const register = async (req, res) => {
       domains: domains || []
     });
     await user.save();
+
+    // Send welcome email
+    await sendWelcomeEmail(email, username);
 
     // Generate token
     const token = generateToken(user._id);
@@ -225,6 +322,9 @@ const githubCallback = async (req, res) => {
         isActive: true
       });
       await user.save();
+
+      // Send welcome email for new GitHub users
+      await sendWelcomeEmail(primaryEmail, finalUsername);
     }
 
     // Generate JWT token
