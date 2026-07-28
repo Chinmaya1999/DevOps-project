@@ -119,7 +119,16 @@ const Chat: React.FC = () => {
 
     newSocket.on('new-message', (message: Message) => {
       if (selectedChat && message.chat === selectedChat._id) {
-        setMessages(prev => [...prev, message])
+        setMessages(prev => {
+          // Replace temporary message with real message if it exists
+          const tempIndex = prev.findIndex(m => m._id.startsWith('temp-') && m.content === message.content)
+          if (tempIndex !== -1) {
+            const newMessages = [...prev]
+            newMessages[tempIndex] = message
+            return newMessages
+          }
+          return [...prev, message]
+        })
         scrollToBottom()
       }
     })
@@ -315,6 +324,27 @@ const Chat: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedChat || !socket) return
+
+    const userId = (user as any)?._id || user?.id
+    const tempMessage: Message = {
+      _id: `temp-${Date.now()}`,
+      chat: selectedChat._id,
+      content: newMessage,
+      messageType: 'text',
+      isQuestion,
+      isSolved: false,
+      sender: {
+        _id: userId || '',
+        username: (user as any)?.username || 'You',
+        avatar: (user as any)?.avatar
+      },
+      createdAt: new Date().toISOString(),
+      readBy: []
+    }
+
+    // Optimistically add message to local state
+    setMessages(prev => [...prev, tempMessage])
+    scrollToBottom()
 
     const messageData = {
       chatId: selectedChat._id,
