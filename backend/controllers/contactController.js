@@ -1,11 +1,11 @@
 const nodemailer = require('nodemailer');
 
-// Configure email transporter using app password
+// Configure email transporter using environment variables
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'devincode1@gmail.com',
-    pass: 'mnzb ndts msgu tobw' // App password
+    user: process.env.EMAIL_USER || 'devincode1@gmail.com',
+    pass: process.env.EMAIL_PASSWORD || 'mnzb ndts msgu tobw'
   }
 });
 
