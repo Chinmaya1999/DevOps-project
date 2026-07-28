@@ -93,8 +93,11 @@ const Chat: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    // Initialize socket connection
-    const newSocket = io(import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api')
+    // Initialize socket connection - use base URL without /api for Socket.IO
+    const socketBaseUrl = import.meta.env.VITE_API_URL 
+      ? import.meta.env.VITE_API_URL.replace('/api', '') 
+      : 'https://api.cmcloud.online'
+    const newSocket = io(socketBaseUrl)
     setSocket(newSocket)
 
     newSocket.on('connect', () => {
@@ -619,7 +622,9 @@ const Chat: React.FC = () => {
               {chats.map(chat => {
                 const otherUser = getOtherParticipant(chat)
                 if (!otherUser) return null
-                const unreadCount = chat.unreadCount.get(getUserId() || '') || 0
+                const unreadCount = chat.unreadCount instanceof Map 
+                  ? (chat.unreadCount.get(getUserId() || '') || 0)
+                  : (chat.unreadCount?.[getUserId() || ''] || 0)
                 
                 return (
                   <div
