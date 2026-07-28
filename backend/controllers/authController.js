@@ -320,8 +320,8 @@ const googleCallback = async (req, res) => {
     // Generate JWT token
     const token = generateToken(user._id);
 
-    // Redirect to frontend with token
-    res.redirect(`https://cmcloud.online/login?token=${token}&google=true`);
+    // Redirect to frontend with token - directly to dashboard
+    res.redirect(`https://cmcloud.online/dashboard?token=${token}&google=true`);
   } catch (error) {
     console.error('Google OAuth error:', error);
     res.redirect('https://cmcloud.online/login?error=google_auth_failed');
@@ -330,7 +330,11 @@ const googleCallback = async (req, res) => {
 
 // GitHub OAuth
 const githubAuth = (req, res) => {
-  const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || 'Ov23liC2DOo1rnezqSvG';
+  const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
+  if (!GITHUB_CLIENT_ID) {
+    return res.status(500).json({ error: 'GitHub OAuth not configured' });
+  }
+  
   const redirect_uri = encodeURIComponent('https://cmcloud.online/api/auth/callback/github');
   const scope = 'user:email';
   
@@ -351,9 +355,10 @@ const githubCallback = async (req, res) => {
     const tokenResponse = await axios.post(
       'https://github.com/login/oauth/access_token',
       {
-        client_id: process.env.GITHUB_CLIENT_ID || 'Ov23liC2DOo1rnezqSvG',
-        client_secret: process.env.GITHUB_CLIENT_SECRET || '6d68eb7ae13913eff84281792e534278b1ca763a',
-        code: code
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code: code,
+        redirect_uri: 'https://cmcloud.online/api/auth/callback/github'
       },
       {
         headers: {
@@ -425,8 +430,8 @@ const githubCallback = async (req, res) => {
     // Generate JWT token
     const token = generateToken(user._id);
 
-    // Redirect to frontend with token
-    res.redirect(`https://cmcloud.online/login?token=${token}&github=true`);
+    // Redirect to frontend with token - directly to dashboard
+    res.redirect(`https://cmcloud.online/dashboard?token=${token}&github=true`);
   } catch (error) {
     console.error('GitHub OAuth error:', error);
     res.redirect('https://cmcloud.online/login?error=github_auth_failed');

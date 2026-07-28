@@ -1,5 +1,5 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useEffect } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   GitBranch,
   FileCode,
@@ -12,9 +12,28 @@ import {
   Package
 } from 'lucide-react'
 import { useDashboardStats } from '../../hooks/useDashboardStats'
+import { useAuth } from '../../context/AuthContext'
+import toast from 'react-hot-toast'
 
 const Dashboard: React.FC = () => {
   const { stats, loading, error } = useDashboardStats()
+  const { setToken } = useAuth()
+  const [searchParams] = useSearchParams()
+
+  // Handle OAuth callback
+  useEffect(() => {
+    const token = searchParams.get('token')
+    const github = searchParams.get('github')
+    const google = searchParams.get('google')
+    
+    if (token && (github === 'true' || google === 'true')) {
+      localStorage.setItem('token', token)
+      setToken(token)
+      toast.success(`${github === 'true' ? 'GitHub' : 'Google'} login successful!`)
+      // Clean URL
+      window.history.replaceState({}, document.title, '/dashboard')
+    }
+  }, [searchParams, setToken])
   const generators = [
     {
       name: 'Jenkins Pipeline',
