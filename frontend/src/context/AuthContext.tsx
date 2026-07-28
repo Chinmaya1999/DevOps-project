@@ -21,9 +21,10 @@ interface AuthContextType {
   user: User | null
   loading: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (username: string, email: string, password: string) => Promise<void>
+  register: (username: string, email: string, password: string, workExperience?: string, domains?: string[]) => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
+  setToken: (token: string) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -76,9 +77,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (username: string, email: string, password: string, workExperience?: string, domains?: string[]) => {
     try {
-      const response = await api.post('/auth/register', { username, email, password })
+      const response = await api.post('/auth/register', { username, email, password, workExperience, domains })
       const { user: userData, token } = response.data
       
       localStorage.setItem('token', token)
@@ -102,13 +103,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  const setToken = (token: string) => {
+    localStorage.setItem('token', token)
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    fetchUserProfile()
+  }
+
   const value = {
     user,
     loading,
     login,
     register,
     logout,
-    refreshUser
+    refreshUser,
+    setToken
   }
 
   return (

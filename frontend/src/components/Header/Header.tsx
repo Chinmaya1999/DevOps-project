@@ -14,8 +14,9 @@ const Header: React.FC<HeaderProps> = ({ showAuthButtons = true, transparent = f
   const navigation = [
     { name: 'Features', href: '/features' },
     { name: 'Pricing', href: '/pricing' },
-    { name: 'Documentation', href: '/docs' },
-    { name: 'About', href: '/about' }
+    { name: 'Documentation', href: '/devops-docs' },
+    { name: 'About', href: '/about' },
+    { name: 'Contact', href: '/contact' }
   ]
 
   const isActive = (href: string) => {

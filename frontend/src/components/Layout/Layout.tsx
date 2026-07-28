@@ -44,7 +44,9 @@ const Layout: React.FC = () => {
   const [profileData, setProfileData] = useState({
     username: '',
     email: '',
-    profilePicture: ''
+    profilePicture: '',
+    workExperience: '',
+    domains: [] as string[]
   })
   const [deploymentSettings, setDeploymentSettings] = useState({
     githubToken: '',
@@ -103,7 +105,9 @@ const Layout: React.FC = () => {
     setProfileData({
       username: user?.username || '',
       email: user?.email || '',
-      profilePicture: user?.profilePicture || ''
+      profilePicture: user?.profilePicture || '',
+      workExperience: (user as any)?.workExperience || '',
+      domains: (user as any)?.domains || []
     })
 
     try {
@@ -670,6 +674,45 @@ const Layout: React.FC = () => {
                     className="input"
                     placeholder="Enter email"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    Work Experience
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={profileData.workExperience}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, workExperience: e.target.value }))}
+                    className="input resize-none"
+                    placeholder="Tell us about your DevOps experience, previous roles, and projects..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    Areas of Expertise
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {profileData.domains.map((domain, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-sm"
+                      >
+                        {domain}
+                        <button
+                          type="button"
+                          onClick={() => setProfileData(prev => ({
+                            ...prev,
+                            domains: prev.domains.filter((_, i) => i !== index)
+                          }))}
+                          className="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-100"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="rounded-2xl border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900/40">

@@ -3,14 +3,16 @@ import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import Header from '../../components/Header/Header'
 import toast from 'react-hot-toast'
-import { GitBranch, Eye, EyeOff, Loader2, ArrowRight, CheckCircle, XCircle, User, Mail, Lock } from 'lucide-react'
+import { GitBranch, Eye, EyeOff, Loader2, ArrowRight, CheckCircle, XCircle, User, Mail, Lock, Briefcase, Server, Cloud, Shield, Zap } from 'lucide-react'
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    workExperience: '',
+    domains: [] as string[]
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -20,9 +22,37 @@ const Register: React.FC = () => {
     username: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    workExperience: ''
   })
   const { register, user } = useAuth()
+
+  const domainOptions = [
+    'DevOps',
+    'Cloud Computing (AWS/Azure/GCP)',
+    'CI/CD',
+    'Kubernetes',
+    'Docker',
+    'Terraform',
+    'Ansible',
+    'Jenkins',
+    'GitHub Actions',
+    'Linux/Unix',
+    'Networking',
+    'Security',
+    'Monitoring & Observability',
+    'Database Administration',
+    'Machine Learning/MLOps'
+  ]
+
+  const handleDomainToggle = (domain: string) => {
+    setFormData(prev => ({
+      ...prev,
+      domains: prev.domains.includes(domain)
+        ? prev.domains.filter(d => d !== domain)
+        : [...prev.domains, domain]
+    }))
+  }
 
   if (user) {
     return <Navigate to="/dashboard" replace />
@@ -82,6 +112,11 @@ const Register: React.FC = () => {
           error = 'Passwords do not match'
         }
         break
+      case 'workExperience':
+        if (value.length > 0 && value.length < 10) {
+          error = 'Please provide more details about your experience'
+        }
+        break
     }
     
     setValidation(prev => ({ ...prev, [name]: error }))
@@ -102,8 +137,9 @@ const Register: React.FC = () => {
     const isEmailValid = validateField('email', formData.email)
     const isPasswordValid = validateField('password', formData.password)
     const isConfirmPasswordValid = validateField('confirmPassword', formData.confirmPassword)
+    const isWorkExperienceValid = validateField('workExperience', formData.workExperience)
     
-    if (!isUsernameValid || !isEmailValid || !isPasswordValid || !isConfirmPasswordValid) {
+    if (!isUsernameValid || !isEmailValid || !isPasswordValid || !isConfirmPasswordValid || !isWorkExperienceValid) {
       toast.error('Please fix all validation errors')
       return
     }
@@ -111,7 +147,7 @@ const Register: React.FC = () => {
     setLoading(true)
 
     try {
-      await register(formData.username, formData.email, formData.password)
+      await register(formData.username, formData.email, formData.password, formData.workExperience, formData.domains)
       toast.success('Registration successful! Welcome aboard!')
     } catch (error: any) {
       toast.error(error.message || 'Registration failed')
@@ -131,40 +167,134 @@ const Register: React.FC = () => {
   const passwordStrength = getPasswordStrength(formData.password)
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-900 relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-animation"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-animation" style={{animationDelay: '2s'}}></div>
-        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-animation" style={{animationDelay: '4s'}}></div>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: `
+            linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px',
+          animation: 'gridMove 20s linear infinite'
+        }} />
+        
+        {/* Floating Orbs */}
+        <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{animationDuration: '8s'}}></div>
+        <div className="absolute top-40 right-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{animationDuration: '12s', animationDelay: '2s'}}></div>
+        <div className="absolute bottom-20 left-1/3 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{animationDuration: '10s', animationDelay: '4s'}}></div>
+        
+        {/* 3D Floating Icons */}
+        <div className="absolute top-1/4 left-10 animate-float-slow" style={{animationDuration: '15s'}}>
+          <Server className="w-16 h-16 text-blue-400 opacity-30" />
+        </div>
+        <div className="absolute top-1/3 right-16 animate-float-slow" style={{animationDuration: '18s', animationDelay: '3s'}}>
+          <Cloud className="w-20 h-20 text-purple-400 opacity-30" />
+        </div>
+        <div className="absolute bottom-1/4 left-1/4 animate-float-slow" style={{animationDuration: '20s', animationDelay: '5s'}}>
+          <Shield className="w-14 h-14 text-cyan-400 opacity-30" />
+        </div>
+        <div className="absolute bottom-1/3 right-1/4 animate-float-slow" style={{animationDuration: '16s', animationDelay: '7s'}}>
+          <Zap className="w-12 h-12 text-yellow-400 opacity-30" />
+        </div>
       </div>
+
+      <style>{`
+        @keyframes gridMove {
+          0% { transform: translate(0, 0); }
+          100% { transform: translate(50px, 50px); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        @keyframes float-slow {
+          0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
+          25% { transform: translateY(-30px) translateX(15px) rotate(5deg); }
+          50% { transform: translateY(-15px) translateX(-10px) rotate(-5deg); }
+          75% { transform: translateY(-40px) translateX(5px) rotate(3deg); }
+        }
+        .animate-float {
+          animation: float 8s ease-in-out infinite;
+        }
+        .animate-float-slow {
+          animation: float-slow 15s ease-in-out infinite;
+        }
+        .glass-card-3d {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 
+            0 25px 50px -12px rgba(0, 0, 0, 0.5),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            inset 0 0 20px rgba(255, 255, 255, 0.05);
+          transform: perspective(1000px) rotateX(0deg) rotateY(0deg);
+          transition: all 0.5s ease;
+        }
+        .glass-card-3d:hover {
+          transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) translateY(-5px);
+          box-shadow: 
+            0 35px 60px -12px rgba(0, 0, 0, 0.6),
+            0 0 0 1px rgba(255, 255, 255, 0.1),
+            inset 0 0 30px rgba(255, 255, 255, 0.08);
+        }
+        .input-3d {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          transition: all 0.3s ease;
+        }
+        .input-3d:focus {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(59, 130, 246, 0.5);
+          box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+          transform: translateY(-2px);
+        }
+        .btn-3d {
+          background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+          box-shadow: 
+            0 10px 30px -10px rgba(59, 130, 246, 0.5),
+            0 0 0 1px rgba(255, 255, 255, 0.1);
+          transition: all 0.3s ease;
+        }
+        .btn-3d:hover {
+          transform: translateY(-3px);
+          box-shadow: 
+            0 20px 40px -10px rgba(59, 130, 246, 0.6),
+            0 0 0 1px rgba(255, 255, 255, 0.2);
+        }
+        .btn-3d:active {
+          transform: translateY(-1px);
+        }
+      `}</style>
       
       <Header showAuthButtons={false} />
       
-      <div className="flex-1 flex items-center justify-center relative">
-        <div className="max-w-md w-full mx-4">
-          {/* Glass Card */}
-          <div className="glass-card p-10 fade-in-up">
+      <div className="flex-1 flex items-center justify-center relative px-4 py-8">
+        <div className="max-w-2xl w-full">
+          {/* 3D Glass Card */}
+          <div className="glass-card-3d p-10 rounded-3xl">
             <div className="text-center mb-8">
               <div className="flex justify-center mb-6">
                 <div className="relative">
-                  <div className="absolute inset-0 hero-gradient rounded-full blur-2xl opacity-60 pulse-animation"></div>
-                  <div className="relative hero-gradient p-3 rounded-2xl shadow-2xl">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur-2xl opacity-60 animate-pulse"></div>
+                  <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-2xl shadow-2xl transform hover:scale-110 transition-transform duration-300">
                     <GitBranch className="w-12 h-12 text-white" />
                   </div>
                 </div>
               </div>
-              <h2 className="text-4xl font-black text-gray-900 dark:text-white mb-2">
+              <h2 className="text-4xl font-black text-white mb-2 tracking-tight">
                 Create Account
               </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-300">
-                Join the DevOps Pipeline Generator community
+              <p className="text-lg text-blue-200">
+                Join the AutoDevOps Platform community
               </p>
             </div>
 
             <form className="space-y-5" onSubmit={handleSubmit}>
               <div>
-                <label htmlFor="username" className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="username" className="block text-sm font-bold text-blue-200 mb-2">
                   Username
                 </label>
                 <div className="relative">
@@ -173,13 +303,13 @@ const Register: React.FC = () => {
                     name="username"
                     type="text"
                     required
-                    className={`input pl-12 ${validation.username ? 'border-red-500 focus:ring-red-500' : ''}`}
+                    className={`input-3d w-full px-4 py-3 pl-12 rounded-xl text-white placeholder-blue-300/50 focus:outline-none ${validation.username ? 'border-red-500' : ''}`}
                     placeholder="Choose a username"
                     value={formData.username}
                     onChange={handleChange}
                   />
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <User className="w-5 h-5 text-gray-400" />
+                    <User className="w-5 h-5 text-blue-400" />
                   </div>
                   <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
                     {formData.username && (
@@ -197,7 +327,7 @@ const Register: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="email" className="block text-sm font-bold text-blue-200 mb-2">
                   Email Address
                 </label>
                 <div className="relative">
@@ -207,13 +337,13 @@ const Register: React.FC = () => {
                     type="email"
                     autoComplete="email"
                     required
-                    className={`input pl-12 ${validation.email ? 'border-red-500 focus:ring-red-500' : ''}`}
+                    className={`input-3d w-full px-4 py-3 pl-12 rounded-xl text-white placeholder-blue-300/50 focus:outline-none ${validation.email ? 'border-red-500' : ''}`}
                     placeholder="Enter your email"
                     value={formData.email}
                     onChange={handleChange}
                   />
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Mail className="w-5 h-5 text-gray-400" />
+                    <Mail className="w-5 h-5 text-blue-400" />
                   </div>
                   <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
                     {formData.email && (
@@ -231,7 +361,7 @@ const Register: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="password" className="block text-sm font-bold text-blue-200 mb-2">
                   Password
                 </label>
                 <div className="relative">
@@ -240,38 +370,38 @@ const Register: React.FC = () => {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    className={`input pl-12 pr-12 ${validation.password ? 'border-red-500 focus:ring-red-500' : ''}`}
+                    className={`input-3d w-full px-4 py-3 pl-12 pr-12 rounded-xl text-white placeholder-blue-300/50 focus:outline-none ${validation.password ? 'border-red-500' : ''}`}
                     placeholder="Create a strong password"
                     value={formData.password}
                     onChange={handleChange}
                   />
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock className="w-5 h-5 text-gray-400" />
+                    <Lock className="w-5 h-5 text-blue-400" />
                   </div>
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-300 hover:text-white transition-colors"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />
+                      <EyeOff className="w-5 h-5" />
                     ) : (
-                      <Eye className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />
+                      <Eye className="w-5 h-5" />
                     )}
                   </button>
                 </div>
                 {formData.password && (
                   <div className="mt-2">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">Password strength</span>
+                      <span className="text-xs text-blue-300">Password strength</span>
                       <span className={`text-xs font-medium ${
-                        passwordStrength.strength >= 3 ? 'text-green-600' : 
-                        passwordStrength.strength >= 2 ? 'text-yellow-600' : 'text-red-600'
+                        passwordStrength.strength >= 3 ? 'text-green-400' : 
+                        passwordStrength.strength >= 2 ? 'text-yellow-400' : 'text-red-400'
                       }`}>
                         {passwordStrength.text}
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-blue-900/50 rounded-full h-2">
                       <div 
                         className={`h-2 rounded-full transition-all duration-300 ${passwordStrength.color}`}
                         style={{ width: `${(passwordStrength.strength / 4) * 100}%` }}
@@ -285,7 +415,7 @@ const Register: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="confirmPassword" className="block text-sm font-bold text-blue-200 mb-2">
                   Confirm Password
                 </label>
                 <div className="relative">
@@ -294,29 +424,75 @@ const Register: React.FC = () => {
                     name="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
                     required
-                    className={`input pl-12 pr-12 ${validation.confirmPassword ? 'border-red-500 focus:ring-red-500' : ''}`}
+                    className={`input-3d w-full px-4 py-3 pl-12 pr-12 rounded-xl text-white placeholder-blue-300/50 focus:outline-none ${validation.confirmPassword ? 'border-red-500' : ''}`}
                     placeholder="Confirm your password"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                   />
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock className="w-5 h-5 text-gray-400" />
+                    <Lock className="w-5 h-5 text-blue-400" />
                   </div>
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-300 hover:text-white transition-colors"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
                     {showConfirmPassword ? (
-                      <EyeOff className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />
+                      <EyeOff className="w-5 h-5" />
                     ) : (
-                      <Eye className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" />
+                      <Eye className="w-5 h-5" />
                     )}
                   </button>
                 </div>
                 {validation.confirmPassword && (
                   <p className="mt-1 text-xs text-red-500">{validation.confirmPassword}</p>
                 )}
+              </div>
+
+              <div>
+                <label htmlFor="workExperience" className="block text-sm font-bold text-blue-200 mb-2">
+                  <Briefcase className="w-4 h-4 inline mr-1" />
+                  Work Experience
+                </label>
+                <textarea
+                  id="workExperience"
+                  name="workExperience"
+                  rows={3}
+                  className={`input-3d w-full px-4 py-3 rounded-xl text-white placeholder-blue-300/50 focus:outline-none resize-none ${validation.workExperience ? 'border-red-500' : ''}`}
+                  placeholder="Tell us about your DevOps experience, previous roles, and projects..."
+                  value={formData.workExperience}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, workExperience: e.target.value }))
+                    validateField('workExperience', e.target.value)
+                  }}
+                />
+                {validation.workExperience && (
+                  <p className="mt-1 text-xs text-red-500">{validation.workExperience}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-blue-200 mb-3">
+                  <Server className="w-4 h-4 inline mr-1" />
+                  Areas of Expertise (Select all that apply)
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-2">
+                  {domainOptions.map((domain) => (
+                    <button
+                      key={domain}
+                      type="button"
+                      onClick={() => handleDomainToggle(domain)}
+                      className={`px-3 py-2 text-xs rounded-lg border transition-all duration-200 ${
+                        formData.domains.includes(domain)
+                          ? 'bg-blue-500/20 border-blue-500 text-blue-300'
+                          : 'bg-white/5 border-white/20 text-blue-200 hover:bg-white/10'
+                      }`}
+                    >
+                      {formData.domains.includes(domain) && <CheckCircle className="w-3 h-3 inline mr-1" />}
+                      {domain}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="flex items-center">
@@ -327,13 +503,13 @@ const Register: React.FC = () => {
                   required
                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
-                <label htmlFor="terms" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                <label htmlFor="terms" className="ml-2 text-sm text-blue-200">
                   I agree to the{' '}
-                  <a href="#" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
+                  <a href="#" className="font-medium text-blue-300 hover:text-white transition-colors">
                     Terms of Service
                   </a>{' '}
                   and{' '}
-                  <a href="#" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
+                  <a href="#" className="font-medium text-blue-300 hover:text-white transition-colors">
                     Privacy Policy
                   </a>
                 </label>
@@ -343,7 +519,7 @@ const Register: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading || Object.values(validation).some(v => v !== '')}
-                  className="w-full btn-primary flex items-center justify-center text-lg"
+                  className="btn-3d w-full py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center"
                 >
                   {loading ? (
                     <>
@@ -362,10 +538,10 @@ const Register: React.FC = () => {
               {/* OAuth Divider */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                  <div className="w-full border-t border-blue-500/30"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-transparent text-gray-500 dark:text-gray-400 font-medium">
+                  <span className="px-4 bg-transparent text-blue-300 font-medium">
                     Or sign up with
                   </span>
                 </div>
@@ -377,10 +553,10 @@ const Register: React.FC = () => {
                   type="button"
                   onClick={handleGoogleSignUp}
                   disabled={oauthLoading !== null}
-                  className="flex items-center justify-center px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
+                  className="flex items-center justify-center px-4 py-3 bg-white/10 backdrop-blur border border-white/20 rounded-xl hover:bg-white/20 focus:outline-none focus:ring-4 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
                 >
                   {oauthLoading === 'google' ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin text-white" />
                   ) : (
                     <>
                       <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -389,7 +565,7 @@ const Register: React.FC = () => {
                         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                       </svg>
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Google</span>
+                      <span className="text-sm font-medium text-white">Google</span>
                     </>
                   )}
                 </button>
@@ -398,7 +574,7 @@ const Register: React.FC = () => {
                   type="button"
                   onClick={handleGithubSignUp}
                   disabled={oauthLoading !== null}
-                  className="flex items-center justify-center px-4 py-3 bg-gray-900 dark:bg-black border-2 border-gray-700 dark:border-gray-800 rounded-xl hover:bg-gray-800 dark:hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
+                  className="flex items-center justify-center px-4 py-3 bg-white/10 backdrop-blur border border-white/20 rounded-xl hover:bg-white/20 focus:outline-none focus:ring-4 focus:ring-gray-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
                 >
                   {oauthLoading === 'github' ? (
                     <Loader2 className="w-5 h-5 animate-spin text-white" />
@@ -414,11 +590,11 @@ const Register: React.FC = () => {
               </div>
 
               <div className="text-center">
-                <span className="text-gray-600 dark:text-gray-400">
+                <span className="text-blue-200">
                   Already have an account?{' '}
                   <Link
                     to="/login"
-                    className="font-bold text-gradient hover:underline transition-all"
+                    className="font-bold text-white hover:text-blue-300 transition-all"
                   >
                     Sign in now
                   </Link>

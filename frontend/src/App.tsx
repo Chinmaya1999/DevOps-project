@@ -20,6 +20,10 @@ import VisionSuccess from './pages/Vision/VisionSuccess'
 import Deployments from './pages/Deployments/Deployments'
 import Payment from './pages/Payment/Payment'
 import PaymentVerification from './pages/Admin/PaymentVerification'
+import Contact from './pages/Contact/Contact'
+import Features from './pages/Features/Features'
+import Pricing from './pages/Pricing/Pricing'
+import About from './pages/About/About'
 import LoadingSpinner from './components/UI/LoadingSpinner'
 
 function App() {
@@ -39,6 +43,10 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/about" element={<About />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     )

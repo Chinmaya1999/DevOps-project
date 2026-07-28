@@ -19,6 +19,7 @@ const deploymentRoutes = require('./routes/deployment');
 const dockerHubRoutes = require('./routes/dockerHub');
 const deploymentManagementRoutes = require('./routes/deploymentManagement');
 const paymentRoutes = require('./routes/payment');
+const contactRoutes = require('./routes/contact');
 
 const app = express();
 
@@ -128,6 +129,7 @@ app.use('/api/deployment', deploymentRoutes);
 app.use('/api/dockerhub', dockerHubRoutes);
 app.use('/api/deployments', deploymentManagementRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
