@@ -17,6 +17,9 @@ interface DevOpsDoc {
   prerequisites: string[]
   author: string
   lastUpdated: string
+  isErrorDoc?: boolean
+  errorType?: string
+  severity?: string
 }
 
 const DevOpsDocs: React.FC = () => {
@@ -43,6 +46,13 @@ const DevOpsDocs: React.FC = () => {
     beginner: 'bg-gradient-to-r from-emerald-400 to-green-500 text-white',
     intermediate: 'bg-gradient-to-r from-amber-400 to-orange-500 text-white',
     advanced: 'bg-gradient-to-r from-red-400 to-rose-500 text-white'
+  }
+
+  const severityColors: { [key: string]: string } = {
+    low: 'bg-gradient-to-r from-emerald-400 to-green-500 text-white',
+    medium: 'bg-gradient-to-r from-amber-400 to-orange-500 text-white',
+    high: 'bg-gradient-to-r from-red-400 to-rose-500 text-white',
+    critical: 'bg-gradient-to-r from-red-600 to-red-700 text-white'
   }
 
   useEffect(() => {
@@ -240,6 +250,11 @@ const DevOpsDocs: React.FC = () => {
 
                 {/* Metadata */}
                 <div className="flex flex-wrap gap-3 mb-6">
+                  {doc.isErrorDoc && doc.severity && (
+                    <span className={`inline-flex items-center px-3 py-1 text-xs font-bold rounded-full ${severityColors[doc.severity]} shadow-md`}>
+                      {doc.severity.toUpperCase()}
+                    </span>
+                  )}
                   <span className={`inline-flex items-center px-3 py-1 text-xs font-bold rounded-full ${difficultyColors[doc.difficulty]} shadow-md`}>
                     {doc.difficulty.toUpperCase()}
                   </span>

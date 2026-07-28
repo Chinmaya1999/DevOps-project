@@ -57,7 +57,13 @@ const TerraformDemos: React.FC = () => {
     isStatic: false,
     author: template.author,
     lastUpdated: template.lastUpdated,
-    difficulty: template.difficulty
+    difficulty: template.difficulty,
+    commonIssues: template.commonIssues,
+    solutions: template.solutions,
+    requiredFiles: template.requiredFiles,
+    troubleshootingSteps: template.troubleshootingSteps,
+    references: template.references,
+    versionCompatibility: template.versionCompatibility
   }))
 
   // Only use uploaded templates from database (static templates are now in DB)
@@ -189,12 +195,84 @@ const TerraformDemos: React.FC = () => {
                 )}
 
                 {isExpanded && (
-                  <div className="mt-4">
+                  <div className="mt-4 space-y-4">
+                    {/* Terraform Code */}
                     <div className="bg-secondary-900 dark:bg-black rounded-lg p-4 overflow-x-auto">
                       <pre className="text-sm text-secondary-100 font-mono whitespace-pre-wrap">
                         <code>{demo.yaml}</code>
                       </pre>
                     </div>
+
+                    {/* Troubleshooting Information */}
+                    {(demo.commonIssues || demo.solutions || demo.requiredFiles || demo.troubleshootingSteps || demo.references || demo.versionCompatibility) && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                        <h4 className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-3">Troubleshooting & Solutions</h4>
+                        
+                        {demo.commonIssues && demo.commonIssues.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Common Issues:</p>
+                            <ul className="text-xs text-gray-600 dark:text-gray-400 list-disc list-inside">
+                              {demo.commonIssues.map((issue: string, idx: number) => (
+                                <li key={idx}>{issue}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {demo.solutions && demo.solutions.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Solutions:</p>
+                            <ul className="text-xs text-gray-600 dark:text-gray-400 list-disc list-inside">
+                              {demo.solutions.map((solution: string, idx: number) => (
+                                <li key={idx}>{solution}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {demo.requiredFiles && demo.requiredFiles.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Required Files:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {demo.requiredFiles.map((file: string, idx: number) => (
+                                <span key={idx} className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
+                                  {file}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {demo.troubleshootingSteps && (
+                          <div className="mb-3">
+                            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Troubleshooting Steps:</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-line">{demo.troubleshootingSteps}</p>
+                          </div>
+                        )}
+
+                        {demo.versionCompatibility && (
+                          <div className="mb-3">
+                            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Version Compatibility:</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">{demo.versionCompatibility}</p>
+                          </div>
+                        )}
+
+                        {demo.references && demo.references.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">References:</p>
+                            <ul className="text-xs">
+                              {demo.references.map((ref: string, idx: number) => (
+                                <li key={idx}>
+                                  <a href={ref} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+                                    {ref}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

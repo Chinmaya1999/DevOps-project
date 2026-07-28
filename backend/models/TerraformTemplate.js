@@ -52,6 +52,31 @@ const terraformTemplateSchema = new mongoose.Schema({
   lastUpdated: {
     type: Date,
     default: Date.now
+  },
+  // Terraform issues and solutions fields
+  commonIssues: [{
+    type: String,
+    trim: true
+  }],
+  solutions: [{
+    type: String,
+    trim: true
+  }],
+  requiredFiles: [{
+    type: String,
+    trim: true
+  }],
+  troubleshootingSteps: {
+    type: String,
+    trim: true
+  },
+  references: [{
+    type: String,
+    trim: true
+  }],
+  versionCompatibility: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true

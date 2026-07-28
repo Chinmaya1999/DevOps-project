@@ -58,6 +58,41 @@ const devOpsDocSchema = new mongoose.Schema({
   lastUpdated: {
     type: Date,
     default: Date.now
+  },
+  // Error documentation fields
+  errorType: {
+    type: String,
+    enum: ['configuration', 'runtime', 'network', 'security', 'performance', 'deployment', 'other'],
+    default: 'other'
+  },
+  symptoms: [{
+    type: String,
+    trim: true
+  }],
+  rootCause: {
+    type: String,
+    trim: true
+  },
+  solution: {
+    type: String,
+    trim: true
+  },
+  references: [{
+    type: String,
+    trim: true
+  }],
+  severity: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'critical'],
+    default: 'medium'
+  },
+  affectedComponents: [{
+    type: String,
+    trim: true
+  }],
+  isErrorDoc: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
