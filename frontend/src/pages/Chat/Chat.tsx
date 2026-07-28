@@ -89,7 +89,7 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     // Initialize socket connection
-    const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5001')
+    const newSocket = io(import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api')
     setSocket(newSocket)
 
     newSocket.on('connect', () => {
@@ -98,7 +98,7 @@ const Chat: React.FC = () => {
       if (userId) {
         newSocket.emit('join', userId)
         // Update online status
-        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat/online-status`, {
+        fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/online-status`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -183,7 +183,7 @@ const Chat: React.FC = () => {
       // Update offline status
       const userId = (user as any)?._id || user?.id
       if (userId) {
-        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat/online-status`, {
+        fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/online-status`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -213,7 +213,7 @@ const Chat: React.FC = () => {
 
   const fetchChats = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -227,7 +227,7 @@ const Chat: React.FC = () => {
 
   const fetchAllUsers = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat/users`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/users`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -241,7 +241,7 @@ const Chat: React.FC = () => {
 
   const fetchPendingRequests = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat/collaboration-requests/pending`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/collaboration-requests/pending`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -255,7 +255,7 @@ const Chat: React.FC = () => {
 
   const fetchMessages = async (chatId: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat/${chatId}/messages`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/${chatId}/messages`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -265,7 +265,7 @@ const Chat: React.FC = () => {
       scrollToBottom()
       
       // Mark as read
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat/${chatId}/read`, {
+      await fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/${chatId}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -278,7 +278,7 @@ const Chat: React.FC = () => {
 
   const fetchUserPoints = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat/points`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/points`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -292,7 +292,7 @@ const Chat: React.FC = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat/leaderboard`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/leaderboard`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -342,7 +342,7 @@ const Chat: React.FC = () => {
 
   const handleSendCollaborationRequest = async (toUserId: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat/collaboration-request`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/collaboration-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -365,7 +365,7 @@ const Chat: React.FC = () => {
 
   const handleAcceptRequest = async (requestId: string, fromUserId: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat/collaboration-request/${requestId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/collaboration-request/${requestId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -391,7 +391,7 @@ const Chat: React.FC = () => {
 
   const handleRejectRequest = async (requestId: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat/collaboration-request/${requestId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/collaboration-request/${requestId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -412,7 +412,7 @@ const Chat: React.FC = () => {
 
   const handleStartChat = async (userId: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat/direct`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/direct`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -434,7 +434,7 @@ const Chat: React.FC = () => {
 
   const handleSolveQuestion = async (messageId: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/chat/messages/${messageId}/solve`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/messages/${messageId}/solve`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -468,10 +468,10 @@ const Chat: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const filteredUsers = allUsers.filter(u => 
+  const filteredUsers = Array.isArray(allUsers) ? allUsers.filter(u => 
     u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     u.email.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  ) : []
 
   const getUserId = () => {
     return (user as any)?._id || user?.id
