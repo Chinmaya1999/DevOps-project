@@ -233,6 +233,101 @@ const getProfile = async (req, res) => {
   }
 };
 
+// Google OAuth
+const googleAuth = (req, res) => {
+  const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+  if (!GOOGLE_CLIENT_ID) {
+    return res.status(500).json({ error: 'Google OAuth not configured' });
+  }
+  
+  const redirect_uri = encodeURIComponent('https://cmcloud.online/api/auth/callback/google');
+  const scope = encodeURIComponent('openid profile email');
+  
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirect_uri}&scope=${scope}&response_type=code`;
+  
+  res.redirect(authUrl);
+};
+
+const googleCallback = async (req, res) => {
+  const { code } = req.query;
+  
+  if (!code) {
+    return res.redirect('https://cmcloud.online/login?error=google_auth_failed');
+  }
+
+  try {
+    // Exchange code for access token
+    const tokenResponse = await axios.post(
+      'https://oauth2.googleapis.com/token',
+      {
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        code: code,
+        redirect_uri: 'https://cmcloud.online/api/auth/callback/google',
+        grant_type: 'authorization_code'
+      }
+    );
+
+    const { access_token } = tokenResponse.data;
+
+    // Get user info from Google
+    const userResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${access_token}`
+      }
+    });
+
+    const googleUser = userResponse.data;
+
+    if (!googleUser.email) {
+      return res.redirect('https://cmcloud.online/login?error=no_email');
+    }
+
+    // Check if user exists
+    let user = await User.findOne({ email: googleUser.email });
+
+    if (user) {
+      // Update Google info if user exists
+      user.googleId = googleUser.id;
+      user.avatar = googleUser.picture;
+      user.lastLogin = new Date();
+      await user.save();
+    } else {
+      // Create new user
+      const username = googleUser.name || googleUser.email.split('@')[0];
+      
+      // Check if username exists
+      const existingUsername = await User.findOne({ username });
+      let finalUsername = username;
+      if (existingUsername) {
+        finalUsername = `${username}_${googleUser.id}`;
+      }
+
+      user = new User({
+        username: finalUsername,
+        email: googleUser.email,
+        googleId: googleUser.id,
+        avatar: googleUser.picture,
+        password: Math.random().toString(36).slice(-8), // Random password for Google users
+        isActive: true
+      });
+      await user.save();
+
+      // Send welcome email for new Google users
+      await sendWelcomeEmail(googleUser.email, finalUsername);
+    }
+
+    // Generate JWT token
+    const token = generateToken(user._id);
+
+    // Redirect to frontend with token
+    res.redirect(`https://cmcloud.online/login?token=${token}&google=true`);
+  } catch (error) {
+    console.error('Google OAuth error:', error);
+    res.redirect('https://cmcloud.online/login?error=google_auth_failed');
+  }
+};
+
 // GitHub OAuth
 const githubAuth = (req, res) => {
   const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || 'Ov23liC2DOo1rnezqSvG';
@@ -342,6 +437,8 @@ module.exports = {
   register,
   login,
   getProfile,
+  googleAuth,
+  googleCallback,
   githubAuth,
   githubCallback
 };

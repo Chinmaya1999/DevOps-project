@@ -28,10 +28,18 @@ const submitContact = async (req, res) => {
       });
     }
 
+    // Check if email is configured
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.error('Email credentials not configured');
+      return res.status(500).json({ 
+        error: 'Email service not configured. Please contact support directly.' 
+      });
+    }
+
     // Compose email
     const mailOptions = {
-      from: 'devincode1@gmail.com',
-      to: 'devincode1@gmail.com',
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
       subject: `Contact Form: ${subject}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -64,7 +72,7 @@ const submitContact = async (req, res) => {
   } catch (error) {
     console.error('Contact form submission error:', error);
     res.status(500).json({ 
-      error: 'Failed to submit contact form' 
+      error: 'Failed to submit contact form. Please try again later.' 
     });
   }
 };
