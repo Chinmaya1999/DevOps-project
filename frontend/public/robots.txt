@@ -1,0 +1,22 @@
+# Robots.txt for AutoDevOps
+# Allow all crawlers to access the site
+
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /profile/
+Disallow: /settings/
+
+# Allow important resources
+Allow: /api/health
+Allow: /api/contact
+
+# Sitemap location
+Sitemap: https://cmcloud.online/sitemap.xml
+
+# Crawl delay (optional, prevents overloading the server)
+Crawl-delay: 1

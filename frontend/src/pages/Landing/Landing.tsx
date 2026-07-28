@@ -165,9 +165,9 @@ const Landing: React.FC = () => {
       <Header transparent={true} />
 
       {/* Hero Section */}
-      <section className="relative pt-20 pb-32 overflow-hidden">
+      <section className="relative pt-20 pb-32 overflow-hidden" aria-labelledby="hero-heading">
         {/* Background Effects */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0" aria-hidden="true">
           <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-animation"></div>
           <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-animation" style={{ animationDelay: '2s' }}></div>
           <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-animation" style={{ animationDelay: '4s' }}></div>
@@ -176,7 +176,7 @@ const Landing: React.FC = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
           <div className="text-center">
             {/* Floating Logo */}
-            <div className="flex justify-center mb-8 fade-in-up">
+            <div className="flex justify-center mb-8 fade-in-up" aria-hidden="true">
               <div className="relative">
                 <div className="absolute inset-0 hero-gradient rounded-full blur-2xl opacity-60 pulse-animation"></div>
                 <div className="relative hero-gradient p-4 rounded-3xl shadow-2xl transform hover:rotate-12 transition-transform duration-500">
@@ -185,15 +185,15 @@ const Landing: React.FC = () => {
               </div>
             </div>
 
-            <h1 className="text-6xl md:text-8xl font-black text-gray-900 dark:text-white mb-6 slide-in-left">
+            <h1 id="hero-heading" className="text-6xl md:text-8xl font-black text-gray-900 dark:text-white mb-6 slide-in-left">
               <span className="block text-gradient animated-gradient">AutoDevOps</span>
               <span className="block text-gray-900 dark:text-white text-shadow-lg">Solve Real Production Issues</span>
             </h1>
 
             <p className="text-2xl md:text-3xl text-gray-600 dark:text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed fade-in-up" style={{ animationDelay: '0.2s' }}>
-              <span className="font-bold text-gradient">One-click deployment</span>, predefined Terraform templates, 
+              <span className="font-bold text-gradient">Best DevOps Platform</span> for one-click deployment, predefined Terraform templates, 
               <br className="hidden md:block" />
-              Jenkins pipelines, Docker image deployment, and community collaboration.
+              Jenkins CI/CD pipelines, Docker containerization, Kubernetes orchestration, and DevOps community collaboration.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16 fade-in-up" style={{ animationDelay: '0.4s' }}>
@@ -238,15 +238,15 @@ const Landing: React.FC = () => {
       </section>
 
       {/* Enhanced Features Section */}
-      <section className="py-24 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl" id="features">
+      <section className="py-24 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl" id="features" aria-labelledby="features-heading">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
-            <h2 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-white mb-6">
+            <h2 id="features-heading" className="text-5xl md:text-6xl font-black text-gray-900 dark:text-white mb-6">
               Everything You Need for
-              <span className="block text-gradient animated-gradient">Production Success</span>
+              <span className="block text-gradient animated-gradient">DevOps Production Success</span>
             </h2>
             <p className="text-2xl text-gray-600 dark:text-gray-300 max-w-4xl mx-auto leading-relaxed">
-              From one-click deployments to community collaboration - solve real DevOps challenges with production-ready solutions.
+              Comprehensive DevOps automation tools: CI/CD pipelines, Infrastructure as Code, container orchestration, cloud deployment, and production-ready configurations.
             </p>
           </div>
 
@@ -282,14 +282,14 @@ const Landing: React.FC = () => {
       </section>
 
       {/* Detailed Features Section */}
-      <section className="py-20 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-900">
+      <section className="py-20 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-900" aria-labelledby="toolkit-heading">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              Comprehensive DevOps Toolkit
+            <h2 id="toolkit-heading" className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              Complete DevOps Automation Toolkit
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Every tool you need to build, deploy, and manage your infrastructure
+              Every DevOps tool you need: Terraform IaC, Jenkins CI/CD, Docker containers, Kubernetes orchestration, Ansible automation, and cloud infrastructure deployment
             </p>
           </div>
 
@@ -462,14 +462,14 @@ const Landing: React.FC = () => {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-white dark:bg-gray-900" id="pricing">
+      <section className="py-20 bg-white dark:bg-gray-900" id="pricing" aria-labelledby="pricing-heading">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              Simple, Transparent Pricing
+            <h2 id="pricing-heading" className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              Affordable DevOps Platform Pricing
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Choose the plan that fits your needs. Start free, upgrade when you are ready.
+              Choose the DevOps automation plan that fits your needs. Free tier available with unlimited Terraform templates and CI/CD pipelines in Pro plan.
             </p>
           </div>
 
@@ -588,14 +588,14 @@ const Landing: React.FC = () => {
       </section>
 
       {/* Documentation Section */}
-      <section className="py-20 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-900" id="documentation">
+      <section className="py-20 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-900" id="documentation" aria-labelledby="docs-heading">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              Comprehensive Documentation
+            <h2 id="docs-heading" className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              DevOps Documentation & Tutorials
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Learn DevOps best practices with our extensive documentation and tutorials
+              Learn DevOps best practices, CI/CD pipeline tutorials, Terraform guides, Kubernetes deployment documentation, and infrastructure automation
             </p>
           </div>
 
