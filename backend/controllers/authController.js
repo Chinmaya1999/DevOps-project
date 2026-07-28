@@ -251,11 +251,15 @@ const googleAuth = (req, res) => {
 const googleCallback = async (req, res) => {
   const { code } = req.query;
   
+  console.log('Google OAuth callback received:', { code: code ? 'present' : 'missing' });
+  
   if (!code) {
-    return res.redirect('https://cmcloud.online/login?error=google_auth_failed');
+    console.error('Google OAuth: No code in callback');
+    return res.redirect('https://cmcloud.online/login?error=google_auth_failed&reason=no_code');
   }
 
   try {
+    console.log('Google OAuth: Exchanging code for access token');
     // Exchange code for access token
     const tokenResponse = await axios.post(
       'https://oauth2.googleapis.com/token',
@@ -269,6 +273,7 @@ const googleCallback = async (req, res) => {
     );
 
     const { access_token } = tokenResponse.data;
+    console.log('Google OAuth: Access token received');
 
     // Get user info from Google
     const userResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -278,8 +283,10 @@ const googleCallback = async (req, res) => {
     });
 
     const googleUser = userResponse.data;
+    console.log('Google OAuth: User info received', { email: googleUser.email, name: googleUser.name });
 
     if (!googleUser.email) {
+      console.error('Google OAuth: No email in user info');
       return res.redirect('https://cmcloud.online/login?error=no_email');
     }
 
@@ -287,12 +294,14 @@ const googleCallback = async (req, res) => {
     let user = await User.findOne({ email: googleUser.email });
 
     if (user) {
+      console.log('Google OAuth: Existing user found, updating');
       // Update Google info if user exists
       user.googleId = googleUser.id;
       user.avatar = googleUser.picture;
       user.lastLogin = new Date();
       await user.save();
     } else {
+      console.log('Google OAuth: Creating new user');
       // Create new user
       const username = googleUser.name || googleUser.email.split('@')[0];
       
@@ -319,12 +328,13 @@ const googleCallback = async (req, res) => {
 
     // Generate JWT token
     const token = generateToken(user._id);
+    console.log('Google OAuth: JWT token generated, redirecting to dashboard');
 
     // Redirect to frontend with token - directly to dashboard
     res.redirect(`https://cmcloud.online/dashboard?token=${token}&google=true`);
   } catch (error) {
-    console.error('Google OAuth error:', error);
-    res.redirect('https://cmcloud.online/login?error=google_auth_failed');
+    console.error('Google OAuth error:', error.response?.data || error.message);
+    res.redirect(`https://cmcloud.online/login?error=google_auth_failed&reason=${encodeURIComponent(error.message || 'unknown')}`);
   }
 };
 

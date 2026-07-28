@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const isGithub = urlParams.get('github') === 'true'
       const isOAuth = isGoogle || isGithub
 
-      console.log('AuthContext: Initializing auth', { oauthToken, isGoogle, isGithub, isOAuth })
+      console.log('AuthContext: Initializing auth', { oauthToken, isGoogle, isGithub, isOAuth, currentPath: window.location.pathname })
 
       const token = oauthToken || localStorage.getItem('token') || sessionStorage.getItem('token')
       
@@ -73,8 +73,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else if (isGithub) {
             toast.success('GitHub login successful!')
           }
-          // Clean URL parameters
-          window.history.replaceState({}, document.title, '/dashboard')
+          // Clean URL parameters - use replaceState to avoid page reload
+          const cleanUrl = window.location.pathname
+          window.history.replaceState({}, document.title, cleanUrl)
         }
       } else {
         console.log('AuthContext: No token found')
@@ -97,6 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('token')
       sessionStorage.removeItem('token')
       delete api.defaults.headers.common['Authorization']
+      toast.error('Failed to authenticate. Please try logging in again.')
     } finally {
       setLoading(false)
     }
