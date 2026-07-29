@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 const User = require('../models/User');
 const { registerSchema, loginSchema } = require('../utils/validators');
 
@@ -101,6 +102,80 @@ const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
+// Generate email verification token
+const generateVerificationToken = () => {
+  return crypto.randomBytes(32).toString('hex');
+};
+
+// Send verification email
+const sendVerificationEmail = async (email, username, token) => {
+  try {
+    const verificationUrl = `https://cmcloud.online/verify-email?token=${token}`;
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'chinmaya.dob1999@gmail.com',
+      to: email,
+      subject: 'Verify Your Email - AutoDevOps',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
+          <div style="background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <span style="font-size: 40px;">✉️</span>
+              </div>
+              <h1 style="color: #333; margin: 0; font-size: 28px; font-weight: bold;">Verify Your Email</h1>
+              <p style="color: #666; margin: 10px 0 0; font-size: 16px;">Complete your registration</p>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 15px; margin: 25px 0; border-left: 4px solid #667eea;">
+              <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.6;">
+                Hello <strong>${username}</strong>,
+              </p>
+              <p style="margin: 15px 0 0; color: #555; font-size: 15px; line-height: 1.6;">
+                Thank you for registering with AutoDevOps! To complete your registration and ensure the security of your account, please verify your email address by clicking the button below.
+              </p>
+              <p style="margin: 15px 0 0; color: #555; font-size: 15px; line-height: 1.6;">
+                This verification confirms that your email address is valid and working, preventing fake registrations.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin: 35px 0;">
+              <a href="${verificationUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
+                Verify Email Address
+              </a>
+            </div>
+            
+            <div style="text-align: center; margin: 25px 0;">
+              <p style="color: #888; font-size: 14px; margin: 0;">Or copy and paste this link:</p>
+              <p style="color: #667eea; font-size: 13px; margin: 5px 0; word-break: break-all;">${verificationUrl}</p>
+            </div>
+            
+            <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin: 25px 0; border-left: 4px solid #ffc107;">
+              <p style="margin: 0; color: #856404; font-size: 14px;">
+                <strong>⚠️ Important:</strong> This verification link will expire in 24 hours. If you don't verify your email within this time, you'll need to request a new verification email.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 35px; padding-top: 25px; border-top: 1px solid #eee;">
+              <p style="color: #888; font-size: 14px; margin: 0;">
+                If you didn't create an account with AutoDevOps, please ignore this email.
+              </p>
+              <p style="color: #888; font-size: 13px; margin: 15px 0 0;">
+                © 2026 AutoDevOps. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Verification email sent to ${email}`);
+  } catch (error) {
+    console.error('Error sending verification email:', error);
+    throw error;
+  }
+};
+
 const register = async (req, res) => {
   try {
     // Validate input
@@ -125,31 +200,35 @@ const register = async (req, res) => {
       });
     }
 
-    // Create new user
+    // Generate verification token
+    const verificationToken = generateVerificationToken();
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Create new user - FORCE role to be 'user' to prevent admin self-assignment
     const user = new User({ 
       username, 
       email, 
       password,
       workExperience: workExperience || '',
-      domains: domains || []
+      domains: domains || [],
+      role: 'user', // Explicitly set to user to prevent admin registration
+      isEmailVerified: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: verificationExpires
     });
     await user.save();
 
-    // Send welcome email
-    await sendWelcomeEmail(email, username);
-
-    // Generate token
-    const token = generateToken(user._id);
+    // Send verification email
+    await sendVerificationEmail(email, username, verificationToken);
 
     res.status(201).json({
-      message: 'User registered successfully',
+      message: 'Registration successful. Please check your email to verify your account.',
       user: {
         id: user._id,
         username: user.username,
         email: user.email,
-        role: user.role
-      },
-      token
+        isEmailVerified: false
+      }
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -179,6 +258,14 @@ const login = async (req, res) => {
     // Check if user is active
     if (!user.isActive) {
       return res.status(401).json({ error: 'Account is deactivated' });
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      return res.status(403).json({ 
+        error: 'Email not verified',
+        message: 'Please verify your email before logging in. Check your inbox for the verification link.'
+      });
     }
 
     // Verify password
@@ -318,7 +405,9 @@ const googleCallback = async (req, res) => {
         googleId: googleUser.id,
         avatar: googleUser.picture,
         password: Math.random().toString(36).slice(-8), // Random password for Google users
-        isActive: true
+        isActive: true,
+        role: 'user', // Explicitly set to user
+        isEmailVerified: true // OAuth users are considered verified since the provider verified the email
       });
       await user.save();
 
@@ -429,7 +518,9 @@ const githubCallback = async (req, res) => {
         githubUsername: githubUser.login,
         avatar: githubUser.avatar_url,
         password: Math.random().toString(36).slice(-8), // Random password for GitHub users
-        isActive: true
+        isActive: true,
+        role: 'user', // Explicitly set to user
+        isEmailVerified: true // OAuth users are considered verified since the provider verified the email
       });
       await user.save();
 
@@ -448,6 +539,89 @@ const githubCallback = async (req, res) => {
   }
 };
 
+// Verify email endpoint
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Verification token is required' });
+    }
+
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        error: 'Invalid or expired verification token',
+        message: 'Please request a new verification email.'
+      });
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+
+    // Send welcome email after verification
+    await sendWelcomeEmail(user.email, user.username);
+
+    res.json({
+      message: 'Email verified successfully',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isEmailVerified: true
+      }
+    });
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ error: 'Server error during email verification' });
+  }
+};
+
+// Resend verification email
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ error: 'Email is already verified' });
+    }
+
+    // Generate new verification token
+    const verificationToken = generateVerificationToken();
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = verificationExpires;
+    await user.save();
+
+    // Send verification email
+    await sendVerificationEmail(user.email, user.username, verificationToken);
+
+    res.json({
+      message: 'Verification email sent successfully'
+    });
+  } catch (error) {
+    console.error('Resend verification email error:', error);
+    res.status(500).json({ error: 'Server error resending verification email' });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -455,5 +629,7 @@ module.exports = {
   googleAuth,
   googleCallback,
   githubAuth,
-  githubCallback
+  githubCallback,
+  verifyEmail,
+  resendVerificationEmail
 };

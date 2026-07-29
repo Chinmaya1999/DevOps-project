@@ -33,7 +33,15 @@ initializeSocket(server);
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: false, // Disable CSP to allow loading images from different origins
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  noSniff: true,
+  frameguard: { action: 'deny' },
+  xssFilter: true
 }));
 
 // CORS configuration - Allow multiple origins
@@ -56,8 +64,7 @@ app.use(cors({
       callback(null, true);
     } else {
       console.log('Blocked origin:', origin);
-      // For development, allow all origins to troubleshoot
-      callback(null, true);
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
@@ -101,6 +108,15 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Strict rate limiter for sensitive endpoints (admin, registration)
+const strictLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Only 10 requests per 15 minutes
+  message: 'Too many requests to this sensitive endpoint. Please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(limiter);
 
 // Body parser middleware
@@ -125,7 +141,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://mongodb:27017/mernapp', {
 .catch((err) => console.error('MongoDB connection error:', err));
 
 // Routes
-app.use('/api/auth', authLimiter, authRoutes); // Apply more lenient rate limiting to auth routes
+app.use('/api/auth', strictLimiter, authRoutes); // Apply strict rate limiting to auth routes
 app.use('/api/generate', generateRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/validate', validateRoutes);
