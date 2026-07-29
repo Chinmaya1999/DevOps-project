@@ -16,7 +16,7 @@ COPY --from=builder /app/package*.json ./
 COPY . .
 
 # Create uploads directory with proper permissions
-RUN mkdir -p /app/uploads/payments && \
+RUN mkdir -p /app/uploads/payments /app/uploads/blogs && \
     chmod -R 755 /app/uploads && \
     chown -R node:node /app/uploads
 

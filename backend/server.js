@@ -101,8 +101,8 @@ const authLimiter = rateLimit({
 app.use(limiter);
 
 // Body parser middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve static files for payment screenshots with CORS headers
 app.use('/uploads', (req, res, next) => {
