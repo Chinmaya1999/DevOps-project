@@ -42,7 +42,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://127.0.0.1:3000',
-  'https://api.cmcloud.online'
+  'https://api.cmcloud.online',
+  'http://localhost:5001'
 ];
 
 app.use(cors({

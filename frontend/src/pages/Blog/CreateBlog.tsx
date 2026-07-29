@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../../services/api';
 import { Save, Eye, X, Image as ImageIcon, Tag as TagIcon, Upload, FileText, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -78,7 +78,7 @@ const CreateBlog = () => {
         formDataToSend.append('pdfs', pdf);
       });
 
-      await axios.post('/api/blogs', formDataToSend, {
+      await api.post('/api/blogs', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -120,7 +120,7 @@ const CreateBlog = () => {
         formDataToSend.append('pdfs', pdf);
       });
 
-      await axios.post('/api/blogs', formDataToSend, {
+      await api.post('/api/blogs', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
