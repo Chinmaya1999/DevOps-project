@@ -128,7 +128,7 @@ const BlogList = () => {
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
           </div>
-        ) : blogs.length === 0 ? (
+        ) : !blogs || blogs.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-400 text-lg">No blogs found</p>
           </div>

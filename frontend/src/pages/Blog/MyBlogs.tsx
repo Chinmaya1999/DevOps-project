@@ -187,7 +187,7 @@ const MyBlogs = () => {
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           </div>
-        ) : blogs.length === 0 ? (
+        ) : !blogs || blogs.length === 0 ? (
           <div className="text-center py-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">No blogs found</p>
