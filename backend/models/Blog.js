@@ -40,6 +40,12 @@ const blogSchema = new mongoose.Schema({
   coverImage: {
     type: String
   },
+  images: [{
+    type: String
+  }],
+  pdfs: [{
+    type: String
+  }],
   likes: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

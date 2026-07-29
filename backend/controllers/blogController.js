@@ -1,5 +1,41 @@
 const Blog = require('../models/Blog');
 const User = require('../models/User');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads/blogs';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit per file
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|pdf/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only images (jpeg, jpg, png, gif) and PDFs are allowed'));
+    }
+  }
+});
 
 // Create a new blog
 const createBlog = async (req, res) => {
@@ -11,6 +47,24 @@ const createBlog = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // Process uploaded files
+    const images = [];
+    const pdfs = [];
+
+    if (req.files && req.files.images) {
+      const imageFiles = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
+      imageFiles.forEach(file => {
+        images.push(`/uploads/blogs/${file.filename}`);
+      });
+    }
+
+    if (req.files && req.files.pdfs) {
+      const pdfFiles = Array.isArray(req.files.pdfs) ? req.files.pdfs : [req.files.pdfs];
+      pdfFiles.forEach(file => {
+        pdfs.push(`/uploads/blogs/${file.filename}`);
+      });
+    }
+
     const blog = new Blog({
       title,
       content,
@@ -20,6 +74,8 @@ const createBlog = async (req, res) => {
       category: category || 'General',
       tags: tags || [],
       coverImage: coverImage || '',
+      images: images,
+      pdfs: pdfs,
       status: status || 'published'
     });
 
@@ -417,5 +473,6 @@ module.exports = {
   getFeaturedBlogs,
   getBlogStats,
   adminGetAllBlogs,
-  adminToggleFeatured
+  adminToggleFeatured,
+  upload
 };

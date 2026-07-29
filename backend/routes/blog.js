@@ -13,7 +13,8 @@ const {
   getFeaturedBlogs,
   getBlogStats,
   adminGetAllBlogs,
-  adminToggleFeatured
+  adminToggleFeatured,
+  upload
 } = require('../controllers/blogController');
 const { auth } = require('../middleware/auth');
 
@@ -23,7 +24,7 @@ router.get('/featured', getFeaturedBlogs);
 router.get('/:id', getBlogById);
 
 // Protected routes
-router.post('/', auth, createBlog);
+router.post('/', auth, upload.fields([{ name: 'images', maxCount: 10 }, { name: 'pdfs', maxCount: 5 }]), createBlog);
 router.get('/user/my-blogs', auth, getUserBlogs);
 router.get('/user/stats', auth, getBlogStats);
 router.put('/:id', auth, updateBlog);
