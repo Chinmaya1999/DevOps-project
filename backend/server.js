@@ -99,24 +99,6 @@ const limiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
-// More lenient rate limiter for authentication endpoints
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // Allow 200 auth requests per 15 minutes
-  message: 'Too many authentication attempts, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Strict rate limiter for sensitive endpoints (admin, registration)
-const strictLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Only 10 requests per 15 minutes
-  message: 'Too many requests to this sensitive endpoint. Please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 app.use(limiter);
 
 // Body parser middleware
@@ -141,7 +123,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://mongodb:27017/mernapp', {
 .catch((err) => console.error('MongoDB connection error:', err));
 
 // Routes
-app.use('/api/auth', strictLimiter, authRoutes); // Apply strict rate limiting to auth routes
+app.use('/api/auth', authRoutes);
 app.use('/api/generate', generateRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/validate', validateRoutes);
