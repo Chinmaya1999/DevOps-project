@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../../services/api';
 import { Heart, MessageCircle, Eye, Calendar, User, Search, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -54,7 +54,7 @@ const BlogList = () => {
         params.search = searchQuery;
       }
 
-      const response = await axios.get('/api/blogs', { params });
+      const response = await api.get('/api/blogs', { params });
       setBlogs(response.data.blogs);
       setTotalPages(response.data.totalPages);
     } catch (error) {
