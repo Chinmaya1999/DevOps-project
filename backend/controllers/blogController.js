@@ -139,9 +139,16 @@ const getBlogById = async (req, res) => {
       return res.status(404).json({ error: 'Blog not found' });
     }
 
-    // Increment view count
-    blog.views += 1;
-    await blog.save();
+    // Increment view count only if user hasn't viewed this blog before
+    if (req.user && !blog.viewedBy.includes(req.user.id)) {
+      blog.viewedBy.push(req.user.id);
+      blog.views += 1;
+      await blog.save();
+    } else if (!req.user) {
+      // For anonymous users, still increment view count
+      blog.views += 1;
+      await blog.save();
+    }
 
     res.json({ blog });
   } catch (error) {
