@@ -52,7 +52,7 @@ const MyBlogs = () => {
         params.status = statusFilter;
       }
       
-      const response = await api.get('/api/blogs/user/my-blogs', { params });
+      const response = await api.get('/blogs/user/my-blogs', { params });
       setBlogs(response.data.blogs);
     } catch (error) {
       console.error('Error fetching my blogs:', error);
@@ -64,7 +64,7 @@ const MyBlogs = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await api.get('/api/blogs/user/stats');
+      const response = await api.get('/blogs/user/stats');
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching blog stats:', error);
@@ -77,7 +77,7 @@ const MyBlogs = () => {
     }
 
     try {
-      await api.delete(`/api/blogs/${blogId}`);
+      await api.delete(`/blogs/${blogId}`);
       toast.success('Blog deleted successfully');
       fetchBlogs();
       fetchStats();

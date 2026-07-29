@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../../services/api';
 import { Save, Eye, X, Image as ImageIcon, Tag as TagIcon, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -30,7 +30,7 @@ const EditBlog = () => {
   const fetchBlog = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/blogs/${id}`);
+      const response = await api.get(`/blogs/${id}`);
       const blog = response.data.blog;
       setFormData({
         title: blog.title,
@@ -68,7 +68,7 @@ const EditBlog = () => {
       setSaving(true);
       const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
 
-      await axios.put(`/api/blogs/${id}`, {
+      await api.put(`/blogs/${id}`, {
         ...formData,
         tags: tagsArray
       });

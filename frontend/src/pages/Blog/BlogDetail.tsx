@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { 
   Heart, 
@@ -71,7 +71,7 @@ const BlogDetail = () => {
   const fetchBlog = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/blogs/${id}`);
+      const response = await api.get(`/blogs/${id}`);
       setBlog(response.data.blog);
       setLiked(response.data.blog.likes.includes(user?.id || ''));
     } catch (error) {
@@ -90,7 +90,7 @@ const BlogDetail = () => {
     }
 
     try {
-      const response = await axios.put(`/api/blogs/${id}/like`);
+      const response = await api.put(`/blogs/${id}/like`);
       setLiked(response.data.liked);
       setBlog(prev => prev ? { ...prev, likeCount: response.data.likeCount } : null);
     } catch (error) {
@@ -114,7 +114,7 @@ const BlogDetail = () => {
 
     try {
       setSubmittingComment(true);
-      const response = await axios.post(`/api/blogs/${id}/comments`, {
+      const response = await api.post(`/blogs/${id}/comments`, {
         content: commentText
       });
 
@@ -138,7 +138,7 @@ const BlogDetail = () => {
     if (!user) return;
 
     try {
-      await axios.delete(`/api/blogs/${id}/comments/${commentId}`);
+      await api.delete(`/blogs/${id}/comments/${commentId}`);
       setBlog(prev => prev ? {
         ...prev,
         comments: prev.comments.filter(c => c._id !== commentId),
@@ -159,7 +159,7 @@ const BlogDetail = () => {
     }
 
     try {
-      await axios.delete(`/api/blogs/${id}`);
+      await api.delete(`/blogs/${id}`);
       toast.success('Blog deleted successfully');
       navigate('/blogs');
     } catch (error) {

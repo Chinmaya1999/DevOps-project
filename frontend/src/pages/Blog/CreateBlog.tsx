@@ -78,7 +78,7 @@ const CreateBlog = () => {
         formDataToSend.append('pdfs', pdf);
       });
 
-      await api.post('/api/blogs', formDataToSend, {
+      await api.post('/blogs', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -120,7 +120,7 @@ const CreateBlog = () => {
         formDataToSend.append('pdfs', pdf);
       });
 
-      await api.post('/api/blogs', formDataToSend, {
+      await api.post('/blogs', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

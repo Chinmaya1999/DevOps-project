@@ -54,7 +54,7 @@ const BlogList = () => {
         params.search = searchQuery;
       }
 
-      const response = await api.get('/api/blogs', { params });
+      const response = await api.get('/blogs', { params });
       setBlogs(response.data.blogs);
       setTotalPages(response.data.totalPages);
     } catch (error) {
