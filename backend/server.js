@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const http = require('http');
 require('dotenv').config();
 
@@ -104,6 +105,7 @@ app.use(limiter);
 // Body parser middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(cookieParser());
 
 // Serve static files for payment screenshots with CORS headers
 app.use('/uploads', (req, res, next) => {

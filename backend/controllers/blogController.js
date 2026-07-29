@@ -3,6 +3,7 @@ const User = require('../models/User');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -139,13 +140,34 @@ const getBlogById = async (req, res) => {
       return res.status(404).json({ error: 'Blog not found' });
     }
 
+    // Get or create anonymous user ID from cookie
+    let anonymousUserId = req.cookies.anonymousUserId;
+    if (!anonymousUserId) {
+      anonymousUserId = uuidv4();
+      res.cookie('anonymousUserId', anonymousUserId, {
+        maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
+        httpOnly: true
+      });
+    }
+
     // Increment view count only if user hasn't viewed this blog before
-    if (req.user && !blog.viewedBy.includes(req.user.id)) {
-      blog.viewedBy.push(req.user.id);
-      blog.views += 1;
-      await blog.save();
-    } else if (!req.user) {
-      // For anonymous users, still increment view count
+    let shouldIncrement = false;
+
+    if (req.user) {
+      // Authenticated user
+      if (!blog.viewedBy.includes(req.user.id)) {
+        blog.viewedBy.push(req.user.id);
+        shouldIncrement = true;
+      }
+    } else {
+      // Anonymous user
+      if (!blog.viewedByAnonymous.includes(anonymousUserId)) {
+        blog.viewedByAnonymous.push(anonymousUserId);
+        shouldIncrement = true;
+      }
+    }
+
+    if (shouldIncrement) {
       blog.views += 1;
       await blog.save();
     }

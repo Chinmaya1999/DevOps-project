@@ -88,6 +88,9 @@ const blogSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  viewedByAnonymous: [{
+    type: String
+  }],
   isPublished: {
     type: Boolean,
     default: true
