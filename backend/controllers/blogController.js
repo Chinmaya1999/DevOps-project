@@ -3,7 +3,6 @@ const User = require('../models/User');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -140,15 +139,8 @@ const getBlogById = async (req, res) => {
       return res.status(404).json({ error: 'Blog not found' });
     }
 
-    // Get or create anonymous user ID from cookie
-    let anonymousUserId = req.cookies.anonymousUserId;
-    if (!anonymousUserId) {
-      anonymousUserId = uuidv4();
-      res.cookie('anonymousUserId', anonymousUserId, {
-        maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
-        httpOnly: true
-      });
-    }
+    // Get anonymous user ID from header (set by frontend)
+    const anonymousUserId = req.headers['x-anonymous-user-id'];
 
     // Increment view count only if user hasn't viewed this blog before
     let shouldIncrement = false;
@@ -159,8 +151,8 @@ const getBlogById = async (req, res) => {
         blog.viewedBy.push(req.user.id);
         shouldIncrement = true;
       }
-    } else {
-      // Anonymous user
+    } else if (anonymousUserId) {
+      // Anonymous user with ID from header
       if (!blog.viewedByAnonymous.includes(anonymousUserId)) {
         blog.viewedByAnonymous.push(anonymousUserId);
         shouldIncrement = true;

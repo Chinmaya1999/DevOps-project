@@ -3,6 +3,7 @@ import axios from 'axios'
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api',
   timeout: 600000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -16,6 +17,16 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+
+    // Add anonymous user ID header for blog view tracking
+    let anonymousUserId = localStorage.getItem('anonymousUserId')
+    if (!anonymousUserId) {
+      // Generate a new UUID for anonymous user
+      anonymousUserId = crypto.randomUUID()
+      localStorage.setItem('anonymousUserId', anonymousUserId)
+    }
+    config.headers['X-Anonymous-User-Id'] = anonymousUserId
+
     return config
   },
   (error) => {

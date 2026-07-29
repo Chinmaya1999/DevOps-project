@@ -73,9 +73,10 @@ app.use(cors({
     'Origin',
     'User-Agent',
     'X-Requested-With',
-    'X-CSRF-Token'
+    'X-CSRF-Token',
+    'X-Anonymous-User-Id'
   ],
-  exposedHeaders: ['Content-Length', 'X-Kuma-Revision'],
+  exposedHeaders: ['Content-Length', 'X-Kuma-Revision', 'Set-Cookie'],
   maxAge: 86400 // Cache preflight response for 24 hours
 }));
 
