@@ -92,7 +92,7 @@ const createBlog = async (req, res) => {
   }
 };
 
-// Get all blogs (public)
+// Get all blogs (public) - optimized for infinite scroll
 const getAllBlogs = async (req, res) => {
   try {
     const { page = 1, limit = 10, category, search, sort = '-createdAt' } = req.query;
@@ -107,18 +107,20 @@ const getAllBlogs = async (req, res) => {
       query.$text = { $search: search };
     }
 
+    const skip = (page - 1) * limit;
     const blogs = await Blog.find(query)
       .populate('author', 'username avatar')
       .sort(sort)
-      .limit(limit * 1)
-      .skip((page - 1) * 1);
+      .limit(parseInt(limit))
+      .skip(skip);
 
     const total = await Blog.countDocuments(query);
+    const hasMore = skip + blogs.length < total;
 
     res.json({
       blogs,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
+      hasMore,
+      currentPage: parseInt(page),
       total
     });
   } catch (error) {
