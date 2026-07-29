@@ -22,6 +22,7 @@ const deploymentManagementRoutes = require('./routes/deploymentManagement');
 const paymentRoutes = require('./routes/payment');
 const contactRoutes = require('./routes/contact');
 const chatRoutes = require('./routes/chat');
+const blogRoutes = require('./routes/blog');
 const { initializeSocket } = require('./socket');
 
 const app = express();
@@ -136,6 +137,7 @@ app.use('/api/deployments', deploymentManagementRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/blogs', blogRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

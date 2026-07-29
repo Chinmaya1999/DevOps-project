@@ -25,6 +25,11 @@ import Features from './pages/Features/Features'
 import Pricing from './pages/Pricing/Pricing'
 import About from './pages/About/About'
 import Chat from './pages/Chat/Chat'
+import BlogList from './pages/Blog/BlogList'
+import CreateBlog from './pages/Blog/CreateBlog'
+import BlogDetail from './pages/Blog/BlogDetail'
+import EditBlog from './pages/Blog/EditBlog'
+import MyBlogs from './pages/Blog/MyBlogs'
 import LoadingSpinner from './components/UI/LoadingSpinner'
 
 function App() {
@@ -74,6 +79,11 @@ function App() {
         <Route path="deployments" element={<Deployments />} />
         <Route path="payment" element={<Payment />} />
         <Route path="admin/payments" element={<PaymentVerification />} />
+        <Route path="blogs" element={<BlogList />} />
+        <Route path="blogs/create" element={<CreateBlog />} />
+        <Route path="blogs/:id" element={<BlogDetail />} />
+        <Route path="blogs/:id/edit" element={<EditBlog />} />
+        <Route path="blogs/my-blogs" element={<MyBlogs />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>

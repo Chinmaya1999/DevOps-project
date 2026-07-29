@@ -24,7 +24,8 @@ import {
   MessageSquare,
   Award,
   HelpCircle,
-  TrendingUp
+  TrendingUp,
+  Heart
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../../services/api'
@@ -106,7 +107,7 @@ interface TerraformDashboardStats {
 }
 
 const Admin: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'docs' | 'create' | 'terraform' | 'users' | 'chat'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'docs' | 'create' | 'terraform' | 'users' | 'chat' | 'blogs'>('dashboard')
   const [users, setUsers] = useState<AppUser[]>([])
   const [userStats, setUserStats] = useState<UserManagementStats | null>(null)
   const [editingUser, setEditingUser] = useState<AppUser | null>(null)
@@ -127,6 +128,7 @@ const Admin: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [terraformStats, setTerraformStats] = useState<TerraformDashboardStats | null>(null)
   const [chatStats, setChatStats] = useState<any>(null)
+  const [blogs, setBlogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [editingDoc, setEditingDoc] = useState<DevOpsDoc | null>(null)
   const [editingTemplate, setEditingTemplate] = useState<TerraformTemplate | null>(null)
@@ -206,6 +208,8 @@ const Admin: React.FC = () => {
       fetchUserStats()
     } else if (activeTab === 'chat') {
       fetchChatStats()
+    } else if (activeTab === 'blogs') {
+      fetchBlogs()
     }
     setLoading(false)
   }, [activeTab])
@@ -384,6 +388,41 @@ const Admin: React.FC = () => {
       setChatStats(response.data)
     } catch (error) {
       console.error('Error fetching chat stats:', error)
+    }
+  }
+
+  const fetchBlogs = async () => {
+    try {
+      const response = await api.get('/blogs/admin/all')
+      setBlogs(response.data.blogs)
+    } catch (error) {
+      console.error('Error fetching blogs:', error)
+      toast.error('Failed to load blogs')
+    }
+  }
+
+  const handleToggleFeatured = async (blogId: string) => {
+    try {
+      await api.put(`/blogs/admin/${blogId}/featured`)
+      toast.success('Blog featured status updated')
+      fetchBlogs()
+    } catch (error) {
+      console.error('Error toggling featured:', error)
+      toast.error('Failed to update featured status')
+    }
+  }
+
+  const handleDeleteBlog = async (blogId: string) => {
+    if (!window.confirm('Are you sure you want to delete this blog?')) {
+      return
+    }
+    try {
+      await api.delete(`/blogs/${blogId}`)
+      toast.success('Blog deleted successfully')
+      fetchBlogs()
+    } catch (error) {
+      console.error('Error deleting blog:', error)
+      toast.error('Failed to delete blog')
     }
   }
 
@@ -658,6 +697,17 @@ const Admin: React.FC = () => {
             >
               <MessageSquare className="w-4 h-4 inline mr-2" />
               Chat Analytics
+            </button>
+            <button
+              onClick={() => setActiveTab('blogs')}
+              className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'blogs'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-secondary-500 hover:text-secondary-700 dark:hover:text-secondary-300'
+              }`}
+            >
+              <FileText className="w-4 h-4 inline mr-2" />
+              Blog Management
             </button>
           </div>
         </div>
@@ -1703,6 +1753,184 @@ const Admin: React.FC = () => {
                     )}
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Blog Management Tab */}
+        {activeTab === 'blogs' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">Blog Management</h2>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                    <FileText className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-secondary-600 dark:text-secondary-400">Total Blogs</p>
+                    <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">{blogs.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
+                    <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-secondary-600 dark:text-secondary-400">Published</p>
+                    <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">
+                      {blogs.filter((b: any) => b.status === 'published').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+                    <Eye className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-secondary-600 dark:text-secondary-400">Drafts</p>
+                    <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">
+                      {blogs.filter((b: any) => b.status === 'draft').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-red-100 dark:bg-red-900 rounded-lg">
+                    <Heart className="w-6 h-6 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-secondary-600 dark:text-secondary-400">Total Likes</p>
+                    <p className="text-2xl font-semibold text-secondary-900 dark:text-secondary-100">
+                      {blogs.reduce((sum: number, b: any) => sum + b.likeCount, 0)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Blogs Table */}
+            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">All Blogs</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Title</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Author</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Category</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Stats</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Featured</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {blogs.map((blog: any) => (
+                      <tr key={blog._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
+                            {blog.title}
+                          </div>
+                          <div className="text-sm text-secondary-500 dark:text-secondary-400">
+                            {new Date(blog.createdAt).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            {blog.authorAvatar && (
+                              <img
+                                src={blog.authorAvatar}
+                                alt={blog.authorName}
+                                className="w-8 h-8 rounded-full mr-2"
+                              />
+                            )}
+                            <div className="text-sm text-secondary-900 dark:text-secondary-100">
+                              {blog.authorName}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded-full">
+                            {blog.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            blog.status === 'published' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : blog.status === 'draft'
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                          }`}>
+                            {blog.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-4 text-sm text-secondary-500 dark:text-secondary-400">
+                            <span className="flex items-center">
+                              <Heart className="w-4 h-4 mr-1" />
+                              {blog.likeCount}
+                            </span>
+                            <span className="flex items-center">
+                              <MessageSquare className="w-4 h-4 mr-1" />
+                              {blog.commentCount}
+                            </span>
+                            <span className="flex items-center">
+                              <Eye className="w-4 h-4 mr-1" />
+                              {blog.views}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => handleToggleFeatured(blog._id)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              blog.isFeatured
+                                ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-400'
+                                : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-400'
+                            }`}
+                          >
+                            <Award className="w-5 h-5" />
+                          </button>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => window.open(`/blogs/${blog._id}`, '_blank')}
+                              className="p-2 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900 rounded-lg transition-colors"
+                              title="View"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBlog(blog._id)}
+                              className="p-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900 rounded-lg transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

@@ -246,7 +246,6 @@ const Layout: React.FC = () => {
     { name: 'Terraform Demos', href: '/terraform-demos', icon: Database },
     { name: 'Validator', href: '/validator', icon: CheckCircle },
     { name: 'History', href: '/history', icon: History },
-    { name: 'Collaboration Hub', href: '/chat', icon: MessageSquare },
     { name: 'Upgrade to Premium', href: '/payment', icon: CreditCard },
 
 //  { name: 'DevOps Roadmap', href: '/roadmap', icon: Map }
@@ -510,6 +509,30 @@ const Layout: React.FC = () => {
                   title="History"
                 >
                   <History className="w-5 h-5" />
+                </button>
+                
+                <button
+                  onClick={() => navigate('/blogs')}
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  title="Blog"
+                >
+                  <FileText className="w-5 h-5" />
+                </button>
+                
+                <button
+                  onClick={() => navigate('/blogs/my-blogs')}
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  title="My Blogs"
+                >
+                  <BookOpen className="w-5 h-5" />
+                </button>
+                
+                <button
+                  onClick={() => navigate('/chat')}
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  title="Collaboration Hub"
+                >
+                  <MessageSquare className="w-5 h-5" />
                 </button>
                 
                 {/* Profile Dropdown */}
