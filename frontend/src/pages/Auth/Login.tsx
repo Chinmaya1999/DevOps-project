@@ -1,28 +1,38 @@
 import React, { useState, useEffect } from 'react'
-import { Link, Navigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import Header from '../../components/Header/Header'
 import toast from 'react-hot-toast'
-import { GitBranch, Eye, EyeOff, Loader2, ArrowRight, Server, Cloud, Shield, Zap } from 'lucide-react'
+import { api } from '../../services/api'
+import { GitBranch, Eye, EyeOff, Loader2, ArrowRight, Server, Cloud, Shield, Zap, Mail } from 'lucide-react'
 
 const Login: React.FC = () => {
   const [searchParams] = useSearchParams()
+  const location = useLocation()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [resending, setResending] = useState(false)
   const { login, user } = useAuth()
 
-  // Handle OAuth error
+  // Handle OAuth error and success message
   useEffect(() => {
     const error = searchParams.get('error')
     if (error) {
       toast.error('OAuth login failed. Please try again.')
       window.history.replaceState({}, document.title, '/login')
     }
-  }, [searchParams])
+
+    // Show success message from verification
+    const state = location.state as any
+    if (state?.message) {
+      toast.success(state.message)
+      window.history.replaceState({}, document.title, '/login')
+    }
+  }, [searchParams, location])
 
   if (user) {
     return <Navigate to="/dashboard" replace />
@@ -51,9 +61,30 @@ const Login: React.FC = () => {
       await login(formData.email, formData.password)
       toast.success('Login successful!')
     } catch (error: any) {
-      toast.error(error.message || 'Login failed')
+      if (error.response?.status === 403 && error.response?.data?.error === 'Email not verified') {
+        toast.error(error.response.data.message || 'Please verify your email before logging in.')
+      } else {
+        toast.error(error.message || 'Login failed')
+      }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    if (!formData.email) {
+      toast.error('Please enter your email address first')
+      return
+    }
+
+    setResending(true)
+    try {
+      await api.post('/auth/resend-verification', { email: formData.email })
+      toast.success('Verification email sent successfully! Please check your inbox.')
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to resend verification email')
+    } finally {
+      setResending(false)
     }
   }
 
@@ -253,9 +284,29 @@ const Login: React.FC = () => {
                     Remember me
                   </label>
                 </div>
-                <a href="#" className="text-sm font-medium text-blue-300 hover:text-white transition-colors">
-                  Forgot password?
-                </a>
+                <div className="flex items-center space-x-4">
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resending}
+                    className="text-sm font-medium text-blue-300 hover:text-white transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {resending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-4 h-4 mr-1" />
+                        Resend verification
+                      </>
+                    )}
+                  </button>
+                  <a href="#" className="text-sm font-medium text-blue-300 hover:text-white transition-colors">
+                    Forgot password?
+                  </a>
+                </div>
               </div>
 
               <div>
