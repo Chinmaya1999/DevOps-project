@@ -553,6 +553,7 @@ const verifyEmail = async (req, res) => {
     const { token } = req.query;
 
     console.log('Email verification attempt with token:', token);
+    console.log('Current time:', new Date().toISOString());
 
     if (!token) {
       return res.status(400).json({ error: 'Verification token is required' });
@@ -564,8 +565,18 @@ const verifyEmail = async (req, res) => {
     });
 
     console.log('User found with token:', user ? user.email : 'No user found');
+    
+    if (user) {
+      console.log('Token expires at:', user.emailVerificationExpires);
+      console.log('Token is valid:', user.emailVerificationExpires > Date.now());
+    }
 
     if (!user) {
+      // Try to find user by token without expiration check for debugging
+      const userWithoutExpiry = await User.findOne({ emailVerificationToken: token });
+      if (userWithoutExpiry) {
+        console.log('User found but token expired. Expires:', userWithoutExpiry.emailVerificationExpires);
+      }
       return res.status(400).json({ 
         error: 'Invalid or expired verification token',
         message: 'Please request a new verification email.'
@@ -580,6 +591,7 @@ const verifyEmail = async (req, res) => {
     await user.save();
 
     console.log('After update - isEmailVerified:', user.isEmailVerified);
+    console.log('Email verification successful for:', user.email);
 
     // Send welcome email after verification
     await sendWelcomeEmail(user.email, user.username);
