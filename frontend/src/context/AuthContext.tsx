@@ -44,16 +44,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const initializeAuth = async () => {
-      // Check for OAuth token in URL
+      // Check for OAuth token in URL (exclude reset-password page)
+      const isResetPasswordPage = window.location.pathname === '/reset-password'
       const urlParams = new URLSearchParams(window.location.search)
       const oauthToken = urlParams.get('token')
       const isGoogle = urlParams.get('google') === 'true'
       const isGithub = urlParams.get('github') === 'true'
       const isOAuth = isGoogle || isGithub
 
-      console.log('AuthContext: Initializing auth', { oauthToken, isGoogle, isGithub, isOAuth, currentPath: window.location.pathname })
+      console.log('AuthContext: Initializing auth', { oauthToken, isGoogle, isGithub, isOAuth, currentPath: window.location.pathname, isResetPasswordPage })
 
-      const token = oauthToken || localStorage.getItem('token') || sessionStorage.getItem('token')
+      const token = (!isResetPasswordPage && oauthToken) || localStorage.getItem('token') || sessionStorage.getItem('token')
       
       if (token) {
         console.log('AuthContext: Token found, storing and fetching profile')
