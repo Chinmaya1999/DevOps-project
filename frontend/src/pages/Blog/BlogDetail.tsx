@@ -195,7 +195,7 @@ const BlogDetail = () => {
     );
   }
 
-  const isAuthor = user?.id === blog.author._id || user?.role === 'admin';
+  const isAuthor = user?.id === blog.author?._id || user?.role === 'admin';
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -392,7 +392,7 @@ const BlogDetail = () => {
                           <span className="text-gray-900 dark:text-white font-medium">{comment.userName}</span>
                           <span className="text-gray-500 dark:text-gray-400 text-sm">{formatDate(comment.createdAt)}</span>
                         </div>
-                        {(user?.id === comment.user._id || user?.role === 'admin') && (
+                        {(user?.id === comment.user?._id || user?.role === 'admin') && (
                           <button
                             onClick={() => handleDeleteComment(comment._id)}
                             className="text-red-400 hover:text-red-300 transition-colors"
