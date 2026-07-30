@@ -622,6 +622,151 @@ const resendVerificationEmail = async (req, res) => {
   }
 };
 
+// Forgot password - send reset email
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // Don't reveal if user exists for security
+      return res.json({ 
+        message: 'If an account exists with this email, a password reset link has been sent.' 
+      });
+    }
+
+    // Generate reset token
+    const resetToken = generateVerificationToken();
+    const resetExpires = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetExpires;
+    await user.save();
+
+    // Send password reset email
+    const resetUrl = `https://cmcloud.online/reset-password?token=${resetToken}`;
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'chinmaya.dob1999@gmail.com',
+      to: email,
+      subject: 'Reset Your Password - AutoDevOps',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
+          <div style="background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <span style="font-size: 40px;">🔑</span>
+              </div>
+              <h1 style="color: #333; margin: 0; font-size: 28px; font-weight: bold;">Reset Your Password</h1>
+              <p style="color: #666; margin: 10px 0 0; font-size: 16px;">Secure account recovery</p>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 15px; margin: 25px 0; border-left: 4px solid #667eea;">
+              <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.6;">
+                Hello <strong>${user.username}</strong>,
+              </p>
+              <p style="margin: 15px 0 0; color: #555; font-size: 15px; line-height: 1.6;">
+                We received a request to reset your password for your AutoDevOps account. Click the button below to set a new password.
+              </p>
+              <p style="margin: 15px 0 0; color: #555; font-size: 15px; line-height: 1.6;">
+                This link will expire in 1 hour for your security.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin: 35px 0;">
+              <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
+                Reset Password
+              </a>
+            </div>
+            
+            <div style="text-align: center; margin: 25px 0;">
+              <p style="color: #888; font-size: 14px; margin: 0;">Or copy and paste this link:</p>
+              <p style="color: #667eea; font-size: 13px; margin: 5px 0; word-break: break-all;">${resetUrl}</p>
+            </div>
+            
+            <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin: 25px 0; border-left: 4px solid #ffc107;">
+              <p style="margin: 0; color: #856404; font-size: 14px;">
+                <strong>⚠️ Security Notice:</strong> If you didn't request this password reset, please ignore this email. Your password will remain unchanged.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 35px; padding-top: 25px; border-top: 1px solid #eee;">
+              <p style="color: #888; font-size: 14px; margin: 0;">
+                For your security, this link can only be used once.
+              </p>
+              <p style="color: #888; font-size: 13px; margin: 15px 0 0;">
+                © 2026 AutoDevOps. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Password reset email sent to ${email}`);
+
+    res.json({ 
+      message: 'If an account exists with this email, a password reset link has been sent.' 
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Server error sending reset email' });
+  }
+};
+
+// Reset password
+const resetPassword = async (req, res) => {
+  try {
+    const { token, password, confirmPassword } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Reset token is required' });
+    }
+
+    if (!password || !confirmPassword) {
+      return res.status(400).json({ error: 'Password and confirm password are required' });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: 'Passwords do not match' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        error: 'Invalid or expired reset token',
+        message: 'Please request a new password reset link.'
+      });
+    }
+
+    // Set new password
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({
+      message: 'Password reset successfully. You can now login with your new password.'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Server error resetting password' });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -631,5 +776,7 @@ module.exports = {
   githubAuth,
   githubCallback,
   verifyEmail,
-  resendVerificationEmail
+  resendVerificationEmail,
+  forgotPassword,
+  resetPassword
 };

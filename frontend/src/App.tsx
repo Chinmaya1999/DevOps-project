@@ -4,6 +4,8 @@ import Layout from './components/Layout/Layout'
 import Login from './pages/Auth/Login'
 import Register from './pages/Auth/Register'
 import VerifyEmail from './pages/Auth/VerifyEmail'
+import ForgotPassword from './pages/Auth/ForgotPassword'
+import ResetPassword from './pages/Auth/ResetPassword'
 import Landing from './pages/Landing/Landing'
 import Dashboard from './pages/Dashboard/Dashboard'
 import Generator from './pages/Generator/Generator'
@@ -51,6 +53,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/features" element={<Features />} />
         <Route path="/pricing" element={<Pricing />} />
