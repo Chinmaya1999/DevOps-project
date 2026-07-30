@@ -16,6 +16,11 @@ services:
     restart: always
     ports:
       - "5001:5001"
+    environment:
+      - GOOGLE_CLIENT_ID=826989147293-ofpofmqf6rk5e0g98kk5qsn0onsf3mr6.apps.googleusercontent.com
+      - GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET_HERE
+      - GITHUB_CLIENT_ID=YOUR_GITHUB_CLIENT_ID_HERE
+      - GITHUB_CLIENT_SECRET=YOUR_GITHUB_CLIENT_SECRET_HERE
     env_file:
       - .env
     networks:

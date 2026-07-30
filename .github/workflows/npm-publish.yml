@@ -99,7 +99,8 @@ jobs:
             git pull origin main
             
             # Stop and remove old containers
-            sudo docker-compose down
+            sudo docker stop frontend backend || true
+            sudo docker rm frontend backend || true
             
             # Pull latest images
             sudo docker pull awsmallick1999/infrapilot-backend:latest
@@ -108,8 +109,22 @@ jobs:
             # Create .env file from GitHub secret
             echo "${{ secrets.ENV_FILE }}" > .env
             
-            # Start containers
-            sudo docker-compose up -d
+            # Start backend container with OAuth environment variables
+            sudo docker run -d \
+              --name backend \
+              -p 5001:5001 \
+              --env-file .env \
+              -e GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
+              -e GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
+              -e GITHUB_CLIENT_ID="${{ secrets.GITHUB_CLIENT_ID }}" \
+              -e GITHUB_CLIENT_SECRET="${{ secrets.GITHUB_CLIENT_SECRET }}" \
+              awsmallick1999/infrapilot-backend:latest
+            
+            # Start frontend container
+            sudo docker run -d \
+              --name frontend \
+              -p 3000:80 \
+              awsmallick1999/infrapilot-frontend:latest
             
             # Clean up unused images
             sudo docker image prune -f
@@ -135,8 +150,10 @@ jobs:
           script: |
             PROJECT_DIR="/home/ec2-user/DevOps-project"
             cd $PROJECT_DIR
-            sudo docker-compose down
+            sudo docker stop frontend backend || true
+            sudo docker rm frontend backend || true
             # Pull previous stable versions if tagged
             sudo docker pull awsmallick1999/infrapilot-backend:previous || echo "No previous version found"
             sudo docker pull awsmallick1999/infrapilot-frontend:previous || echo "No previous version found"
-            sudo docker-compose up -d
+            sudo docker run -d --name backend -p 5001:5001 awsmallick1999/infrapilot-backend:previous || echo "Backend rollback failed"
+            sudo docker run -d --name frontend -p 3000:80 awsmallick1999/infrapilot-frontend:previous || echo "Frontend rollback failed"
