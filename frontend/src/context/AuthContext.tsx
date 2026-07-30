@@ -123,13 +123,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (username: string, email: string, password: string, workExperience?: string, domains?: string[]) => {
     try {
       const response = await api.post('/auth/register', { username, email, password, workExperience, domains })
-      const { user: userData, token } = response.data
-      
-      // Store token in both localStorage and sessionStorage
-      localStorage.setItem('token', token)
-      sessionStorage.setItem('token', token)
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      setUser(userData)
+      // Registration now requires OTP verification, so don't auto-login
+      // Just return the response data
+      return response.data
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Registration failed')
     }
