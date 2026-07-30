@@ -116,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
       setUser(userData)
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Login failed')
+      throw error
     }
   }
 
