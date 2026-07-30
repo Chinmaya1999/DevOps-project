@@ -66,6 +66,12 @@ const userSchema = new mongoose.Schema({
   emailVerificationExpires: {
     type: Date
   },
+  emailOTP: {
+    type: String
+  },
+  emailOTPExpires: {
+    type: Date
+  },
   resetPasswordToken: {
     type: String
   },

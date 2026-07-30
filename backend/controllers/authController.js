@@ -107,6 +107,71 @@ const generateVerificationToken = () => {
   return crypto.randomBytes(32).toString('hex');
 };
 
+// Generate 6-digit OTP
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// Send OTP email
+const sendOTPEmail = async (email, username, otp) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'chinmaya.dob1999@gmail.com',
+      to: email,
+      subject: 'Verify Your Email - AutoDevOps OTP',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
+          <div style="background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <span style="font-size: 40px;">🔐</span>
+              </div>
+              <h1 style="color: #333; margin: 0; font-size: 28px; font-weight: bold;">Verify Your Email</h1>
+              <p style="color: #666; margin: 10px 0 0; font-size: 16px;">Complete your registration with OTP</p>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 15px; margin: 25px 0; border-left: 4px solid #667eea;">
+              <p style="margin: 0; color: #333; font-size: 16px; line-height: 1.6;">
+                Hello <strong>${username}</strong>,
+              </p>
+              <p style="margin: 15px 0 0; color: #555; font-size: 15px; line-height: 1.6;">
+                Thank you for registering with AutoDevOps! To complete your registration, please use the following One-Time Password (OTP):
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin: 35px 0;">
+              <div style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 50px; border-radius: 15px; font-weight: bold; font-size: 36px; letter-spacing: 8px; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
+                ${otp}
+              </div>
+            </div>
+            
+            <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin: 25px 0; border-left: 4px solid #ffc107;">
+              <p style="margin: 0; color: #856404; font-size: 14px;">
+                <strong>⚠️ Important:</strong> This OTP will expire in 10 minutes. Please enter it on the verification page to complete your registration.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 35px; padding-top: 25px; border-top: 1px solid #eee;">
+              <p style="color: #888; font-size: 14px; margin: 0;">
+                If you didn't create an account with AutoDevOps, please ignore this email.
+              </p>
+              <p style="color: #888; font-size: 13px; margin: 15px 0 0;">
+                © 2026 AutoDevOps. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`OTP email sent to ${email}`);
+  } catch (error) {
+    console.error('Error sending OTP email:', error);
+    throw error;
+  }
+};
+
 // Send verification email
 const sendVerificationEmail = async (email, username, token) => {
   try {
@@ -200,9 +265,9 @@ const register = async (req, res) => {
       });
     }
 
-    // Generate verification token
-    const verificationToken = generateVerificationToken();
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    // Generate OTP
+    const otp = generateOTP();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Create new user - FORCE role to be 'user' to prevent admin self-assignment
     const user = new User({ 
@@ -213,16 +278,16 @@ const register = async (req, res) => {
       domains: domains || [],
       role: 'user', // Explicitly set to user to prevent admin registration
       isEmailVerified: false,
-      emailVerificationToken: verificationToken,
-      emailVerificationExpires: verificationExpires
+      emailOTP: otp,
+      emailOTPExpires: otpExpires
     });
     await user.save();
 
-    // Send verification email
-    await sendVerificationEmail(email, username, verificationToken);
+    // Send OTP email
+    await sendOTPEmail(email, username, otp);
 
     res.status(201).json({
-      message: 'Registration successful. Please check your email to verify your account.',
+      message: 'Registration successful. Please check your email for OTP to verify your account.',
       user: {
         id: user._id,
         username: user.username,
@@ -270,7 +335,7 @@ const login = async (req, res) => {
       console.log('Login rejected - email not verified for:', email);
       return res.status(403).json({ 
         error: 'Email not verified',
-        message: 'Please verify your email before logging in. Check your inbox for the verification link.'
+        message: 'Please verify your email with OTP before logging in. Check your inbox for the OTP.'
       });
     }
 
@@ -544,6 +609,145 @@ const githubCallback = async (req, res) => {
   } catch (error) {
     console.error('GitHub OAuth error:', error);
     res.redirect('https://cmcloud.online/login?error=github_auth_failed');
+  }
+};
+
+// Verify OTP endpoint
+const verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    console.log('=== OTP VERIFICATION ATTEMPT ===');
+    console.log('Email:', email);
+    console.log('OTP:', otp);
+    console.log('Current time:', new Date().toISOString());
+
+    if (!email || !otp) {
+      console.log('ERROR: Email or OTP not provided');
+      return res.status(400).json({ error: 'Email and OTP are required' });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      console.log('ERROR: No user found with this email');
+      return res.status(404).json({ 
+        error: 'User not found',
+        message: 'No user found with this email address.'
+      });
+    }
+
+    console.log('User found:', user.email);
+    console.log('Stored OTP:', user.emailOTP);
+    console.log('OTP expires at:', user.emailOTPExpires);
+    console.log('OTP expired:', user.emailOTPExpires < Date.now());
+    console.log('Current isEmailVerified:', user.isEmailVerified);
+
+    // Check if already verified
+    if (user.isEmailVerified) {
+      return res.status(400).json({ 
+        error: 'Email already verified',
+        message: 'Your email is already verified.'
+      });
+    }
+
+    // Check if OTP is expired
+    if (user.emailOTPExpires < Date.now()) {
+      console.log('ERROR: OTP has expired');
+      return res.status(400).json({ 
+        error: 'Expired OTP',
+        message: 'This OTP has expired. Please request a new OTP.'
+      });
+    }
+
+    // Verify OTP
+    if (user.emailOTP !== otp) {
+      console.log('ERROR: Invalid OTP');
+      return res.status(400).json({ 
+        error: 'Invalid OTP',
+        message: 'The OTP you entered is incorrect.'
+      });
+    }
+
+    console.log('Updating user verification status...');
+    
+    user.isEmailVerified = true;
+    user.emailOTP = undefined;
+    user.emailOTPExpires = undefined;
+    
+    const savedUser = await user.save();
+    
+    console.log('User saved successfully');
+    console.log('New isEmailVerified:', savedUser.isEmailVerified);
+    console.log('OTP verification successful for:', savedUser.email);
+
+    // Send welcome email after verification
+    try {
+      await sendWelcomeEmail(savedUser.email, savedUser.username);
+      console.log('Welcome email sent');
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+      // Don't fail the verification if welcome email fails
+    }
+
+    console.log('=== VERIFICATION COMPLETE ===');
+    
+    res.json({
+      message: 'Email verified successfully. You can now login.',
+      user: {
+        id: savedUser._id,
+        username: savedUser.username,
+        email: savedUser.email,
+        isEmailVerified: true
+      }
+    });
+  } catch (error) {
+    console.error('=== OTP VERIFICATION ERROR ===');
+    console.error('Error details:', error);
+    res.status(500).json({ 
+      error: 'Server error during OTP verification',
+      message: error.message 
+    });
+  }
+};
+
+// Resend OTP
+const resendOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ error: 'Email is already verified' });
+    }
+
+    // Generate new OTP
+    const otp = generateOTP();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    user.emailOTP = otp;
+    user.emailOTPExpires = otpExpires;
+    await user.save();
+
+    // Send OTP email
+    await sendOTPEmail(user.email, user.username, otp);
+
+    res.json({
+      message: 'OTP sent successfully'
+    });
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    res.status(500).json({ error: 'Server error resending OTP' });
   }
 };
 
@@ -822,6 +1026,8 @@ module.exports = {
   githubAuth,
   githubCallback,
   verifyEmail,
+  verifyOTP,
+  resendOTP,
   resendVerificationEmail,
   forgotPassword,
   resetPassword

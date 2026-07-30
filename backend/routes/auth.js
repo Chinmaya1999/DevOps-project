@@ -1,7 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { auth } = require('../middleware/auth');
-const { register, login, getProfile, googleAuth, googleCallback, githubAuth, githubCallback, verifyEmail, resendVerificationEmail, forgotPassword, resetPassword } = require('../controllers/authController');
+const { register, login, getProfile, googleAuth, googleCallback, githubAuth, githubCallback, verifyEmail, verifyOTP, resendOTP, resendVerificationEmail, forgotPassword, resetPassword } = require('../controllers/authController');
 
 const router = express.Router();
 
@@ -40,6 +40,12 @@ router.post('/login', loginLimiter, login);
 
 // Verify email
 router.get('/verify-email', verifyEmail);
+
+// Verify OTP
+router.post('/verify-otp', verifyOTP);
+
+// Resend OTP
+router.post('/resend-otp', resendOTP);
 
 // Resend verification email
 router.post('/resend-verification', resendVerificationEmail);

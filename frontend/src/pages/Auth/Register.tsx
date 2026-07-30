@@ -3,7 +3,8 @@ import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import Header from '../../components/Header/Header'
 import toast from 'react-hot-toast'
-import { GitBranch, Eye, EyeOff, Loader2, ArrowRight, CheckCircle, XCircle, User, Mail, Lock, Briefcase, Server, Cloud, Shield, Zap } from 'lucide-react'
+import { GitBranch, Eye, EyeOff, Loader2, ArrowRight, CheckCircle, XCircle, User, Mail, Lock, Briefcase, Server, Cloud, Shield, Zap, RefreshCw } from 'lucide-react'
+import api from '../../services/api'
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -25,6 +26,11 @@ const Register: React.FC = () => {
     confirmPassword: '',
     workExperience: ''
   })
+  const [showOTPSection, setShowOTPSection] = useState(false)
+  const [otp, setOtp] = useState('')
+  const [otpLoading, setOtpLoading] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState('')
   const { register, user } = useAuth()
 
   const domainOptions = [
@@ -148,11 +154,49 @@ const Register: React.FC = () => {
 
     try {
       await register(formData.username, formData.email, formData.password, formData.workExperience, formData.domains)
-      toast.success('Registration successful! Welcome aboard!')
+      setRegisteredEmail(formData.email)
+      setShowOTPSection(true)
+      toast.success('Registration successful! Please check your email for OTP.')
     } catch (error: any) {
       toast.error(error.message || 'Registration failed')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleOTPVerification = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!otp || otp.length !== 6) {
+      toast.error('Please enter a valid 6-digit OTP')
+      return
+    }
+
+    setOtpLoading(true)
+
+    try {
+      await api.post('/auth/verify-otp', { email: registeredEmail, otp })
+      toast.success('Email verified successfully! You can now login.')
+      setShowOTPSection(false)
+      // Redirect to login page
+      window.location.href = '/login'
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || error.message || 'OTP verification failed')
+    } finally {
+      setOtpLoading(false)
+    }
+  }
+
+  const handleResendOTP = async () => {
+    setResendLoading(true)
+
+    try {
+      await api.post('/auth/resend-otp', { email: registeredEmail })
+      toast.success('New OTP sent to your email')
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || error.message || 'Failed to resend OTP')
+    } finally {
+      setResendLoading(false)
     }
   }
 
@@ -275,22 +319,97 @@ const Register: React.FC = () => {
         <div className="max-w-2xl w-full">
           {/* 3D Glass Card */}
           <div className="glass-card-3d p-10 rounded-3xl">
-            <div className="text-center mb-8">
-              <div className="flex justify-center mb-6">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur-2xl opacity-60 animate-pulse"></div>
-                  <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-2xl shadow-2xl transform hover:scale-110 transition-transform duration-300">
-                    <GitBranch className="w-12 h-12 text-white" />
+            {showOTPSection ? (
+              <div className="text-center">
+                <div className="flex justify-center mb-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur-2xl opacity-60 animate-pulse"></div>
+                    <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-2xl shadow-2xl">
+                      <Lock className="w-12 h-12 text-white" />
+                    </div>
                   </div>
                 </div>
+                <h2 className="text-4xl font-black text-white mb-2 tracking-tight">
+                  Verify Your Email
+                </h2>
+                <p className="text-lg text-blue-200 mb-8">
+                  Enter the 6-digit OTP sent to {registeredEmail}
+                </p>
+
+                <form onSubmit={handleOTPVerification} className="space-y-5">
+                  <div>
+                    <label htmlFor="otp" className="block text-sm font-bold text-blue-200 mb-2">
+                      One-Time Password (OTP)
+                    </label>
+                    <input
+                      id="otp"
+                      type="text"
+                      maxLength={6}
+                      className="input-3d w-full px-4 py-3 rounded-xl text-white text-center text-2xl tracking-widest placeholder-blue-300/50 focus:outline-none"
+                      placeholder="000000"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={otpLoading}
+                    className="btn-3d w-full py-4 rounded-xl text-white font-bold text-lg flex items-center justify-center"
+                  >
+                    {otpLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-3 animate-spin" />
+                        Verifying...
+                      </>
+                    ) : (
+                      <>
+                        Verify OTP
+                        <ArrowRight className="ml-3 w-5 h-5" />
+                      </>
+                    )}
+                  </button>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={handleResendOTP}
+                      disabled={resendLoading}
+                      className="text-blue-300 hover:text-white transition-colors flex items-center justify-center mx-auto"
+                    >
+                      {resendLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Resend OTP
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
-              <h2 className="text-4xl font-black text-white mb-2 tracking-tight">
-                Create Account
-              </h2>
-              <p className="text-lg text-blue-200">
-                Join the AutoDevOps Platform community
-              </p>
-            </div>
+            ) : (
+              <>
+                <div className="text-center mb-8">
+                  <div className="flex justify-center mb-6">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur-2xl opacity-60 animate-pulse"></div>
+                      <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-2xl shadow-2xl transform hover:scale-110 transition-transform duration-300">
+                        <GitBranch className="w-12 h-12 text-white" />
+                      </div>
+                    </div>
+                  </div>
+                  <h2 className="text-4xl font-black text-white mb-2 tracking-tight">
+                    Create Account
+                  </h2>
+                  <p className="text-lg text-blue-200">
+                    Join the AutoDevOps Platform community
+                  </p>
+                </div>
 
             <form className="space-y-5" onSubmit={handleSubmit}>
               <div>
@@ -601,6 +720,8 @@ const Register: React.FC = () => {
                 </span>
               </div>
             </form>
+              </>
+            )}
           </div>
         </div>
       </div>
