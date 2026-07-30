@@ -3,7 +3,7 @@ import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import Header from '../../components/Header/Header'
 import toast from 'react-hot-toast'
-import { GitBranch, Eye, EyeOff, Loader2, ArrowRight, CheckCircle, XCircle, User, Mail, Lock, Briefcase, Server, Cloud, Shield, Zap, RefreshCw } from 'lucide-react'
+import { GitBranch, Eye, EyeOff, Loader2, ArrowRight, CheckCircle, XCircle, User, Mail, Lock, Briefcase, Server, Cloud, Shield, Zap, RefreshCw, Search, ChevronDown, X } from 'lucide-react'
 import api from '../../services/api'
 
 const Register: React.FC = () => {
@@ -31,6 +31,8 @@ const Register: React.FC = () => {
   const [otpLoading, setOtpLoading] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
   const [registeredEmail, setRegisteredEmail] = useState('')
+  const [domainDropdownOpen, setDomainDropdownOpen] = useState(false)
+  const [domainSearch, setDomainSearch] = useState('')
   const { register, user } = useAuth()
 
   const domainOptions = [
@@ -51,6 +53,15 @@ const Register: React.FC = () => {
     'Machine Learning/MLOps'
   ]
 
+  const workExperienceOptions = [
+    'Less than 1 year',
+    '1-2 years',
+    '2-3 years',
+    '3-5 years',
+    '5-10 years',
+    '10+ years'
+  ]
+
   const handleDomainToggle = (domain: string) => {
     setFormData(prev => ({
       ...prev,
@@ -59,6 +70,10 @@ const Register: React.FC = () => {
         : [...prev.domains, domain]
     }))
   }
+
+  const filteredDomains = domainOptions.filter(domain =>
+    domain.toLowerCase().includes(domainSearch.toLowerCase())
+  )
 
   if (user) {
     return <Navigate to="/dashboard" replace />
@@ -119,8 +134,8 @@ const Register: React.FC = () => {
         }
         break
       case 'workExperience':
-        if (value.length > 0 && value.length < 10) {
-          error = 'Please provide more details about your experience'
+        if (!value) {
+          error = 'Please select your work experience'
         }
         break
     }
@@ -573,18 +588,23 @@ const Register: React.FC = () => {
                   <Briefcase className="w-4 h-4 inline mr-1" />
                   Work Experience
                 </label>
-                <textarea
+                <select
                   id="workExperience"
                   name="workExperience"
-                  rows={3}
-                  className={`input-3d w-full px-4 py-3 rounded-xl text-white placeholder-blue-300/50 focus:outline-none resize-none ${validation.workExperience ? 'border-red-500' : ''}`}
-                  placeholder="Tell us about your DevOps experience, previous roles, and projects..."
+                  className={`input-3d w-full px-4 py-3 rounded-xl text-white focus:outline-none ${validation.workExperience ? 'border-red-500' : ''}`}
                   value={formData.workExperience}
                   onChange={(e) => {
                     setFormData(prev => ({ ...prev, workExperience: e.target.value }))
                     validateField('workExperience', e.target.value)
                   }}
-                />
+                >
+                  <option value="" className="bg-slate-800 text-blue-300">Select your experience level</option>
+                  {workExperienceOptions.map((option) => (
+                    <option key={option} value={option} className="bg-slate-800 text-white">
+                      {option}
+                    </option>
+                  ))}
+                </select>
                 {validation.workExperience && (
                   <p className="mt-1 text-xs text-red-500">{validation.workExperience}</p>
                 )}
@@ -595,23 +615,94 @@ const Register: React.FC = () => {
                   <Server className="w-4 h-4 inline mr-1" />
                   Areas of Expertise (Select all that apply)
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-2">
-                  {domainOptions.map((domain) => (
-                    <button
-                      key={domain}
-                      type="button"
-                      onClick={() => handleDomainToggle(domain)}
-                      className={`px-3 py-2 text-xs rounded-lg border transition-all duration-200 ${
-                        formData.domains.includes(domain)
-                          ? 'bg-blue-500/20 border-blue-500 text-blue-300'
-                          : 'bg-white/5 border-white/20 text-blue-200 hover:bg-white/10'
-                      }`}
-                    >
-                      {formData.domains.includes(domain) && <CheckCircle className="w-3 h-3 inline mr-1" />}
-                      {domain}
-                    </button>
-                  ))}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setDomainDropdownOpen(!domainDropdownOpen)}
+                    className="input-3d w-full px-4 py-3 rounded-xl text-white text-left focus:outline-none flex items-center justify-between"
+                  >
+                    <span className={formData.domains.length > 0 ? 'text-white' : 'text-blue-300/50'}>
+                      {formData.domains.length > 0 
+                        ? `${formData.domains.length} domain${formData.domains.length > 1 ? 's' : ''} selected`
+                        : 'Select areas of expertise'
+                      }
+                    </span>
+                    <ChevronDown className={`w-5 h-5 text-blue-400 transition-transform duration-300 ${domainDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {domainDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-2 bg-slate-800/95 backdrop-blur-lg border border-blue-500/30 rounded-xl shadow-2xl overflow-hidden">
+                      <div className="p-3 border-b border-blue-500/20">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-400" />
+                          <input
+                            type="text"
+                            placeholder="Search domains..."
+                            value={domainSearch}
+                            onChange={(e) => setDomainSearch(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 bg-slate-700/50 border border-blue-500/30 rounded-lg text-white placeholder-blue-300/50 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto p-2">
+                        {filteredDomains.length > 0 ? (
+                          filteredDomains.map((domain) => (
+                            <button
+                              key={domain}
+                              type="button"
+                              onClick={() => handleDomainToggle(domain)}
+                              className={`w-full px-3 py-2 text-left rounded-lg transition-all duration-200 flex items-center justify-between ${
+                                formData.domains.includes(domain)
+                                  ? 'bg-blue-500/20 border border-blue-500 text-blue-300'
+                                  : 'bg-white/5 border border-transparent text-blue-200 hover:bg-white/10'
+                              }`}
+                            >
+                              <span className="text-sm">{domain}</span>
+                              {formData.domains.includes(domain) && (
+                                <CheckCircle className="w-4 h-4 text-blue-400" />
+                              )}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="text-center py-4 text-blue-300/50 text-sm">
+                            No domains found
+                          </div>
+                        )}
+                      </div>
+                      {formData.domains.length > 0 && (
+                        <div className="p-2 border-t border-blue-500/20">
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, domains: [] }))}
+                            className="w-full px-3 py-2 text-sm text-red-400 hover:text-red-300 transition-colors flex items-center justify-center"
+                          >
+                            <X className="w-4 h-4 mr-2" />
+                            Clear all selections
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
+                {formData.domains.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {formData.domains.map((domain) => (
+                      <span
+                        key={domain}
+                        className="inline-flex items-center px-2 py-1 text-xs bg-blue-500/20 border border-blue-500/50 rounded-md text-blue-300"
+                      >
+                        {domain}
+                        <button
+                          type="button"
+                          onClick={() => handleDomainToggle(domain)}
+                          className="ml-1 hover:text-white"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center">

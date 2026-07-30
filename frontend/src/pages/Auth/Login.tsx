@@ -274,39 +274,51 @@ const Login: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="remember"
-                    name="remember"
-                    type="checkbox"
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                  />
-                  <label htmlFor="remember" className="ml-2 text-sm font-medium text-blue-200">
-                    Remember me
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center space-x-3 cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        id="remember"
+                        name="remember"
+                        type="checkbox"
+                        className="sr-only peer"
+                      />
+                      <div className="w-5 h-5 border-2 border-blue-400/50 rounded-md peer-checked:bg-gradient-to-r peer-checked:from-blue-500 peer-checked:to-purple-600 peer-checked:border-transparent transition-all duration-300 group-hover:border-blue-400"></div>
+                      <svg className="absolute inset-0 w-5 h-5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-blue-200 group-hover:text-white transition-colors">Remember me</span>
                   </label>
                 </div>
-                <div className="flex items-center space-x-4">
+
+                <div className="flex items-center justify-between pt-2 border-t border-blue-500/20">
                   <button
                     type="button"
                     onClick={handleResendVerification}
                     disabled={resending}
-                    className="text-sm font-medium text-blue-300 hover:text-white transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center space-x-2 text-sm font-medium text-blue-300 hover:text-white transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
                     {resending ? (
                       <>
-                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                        Sending...
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Sending...</span>
                       </>
                     ) : (
                       <>
-                        <Mail className="w-4 h-4 mr-1" />
-                        Resend verification
+                        <Mail className="w-4 h-4" />
+                        <span>Resend verification</span>
                       </>
                     )}
                   </button>
-                  <Link to="/forgot-password" className="text-sm font-medium text-blue-300 hover:text-white transition-colors">
-                    Forgot password?
+                  
+                  <Link 
+                    to="/forgot-password" 
+                    className="flex items-center space-x-2 text-sm font-medium text-blue-300 hover:text-white transition-all duration-300 hover:scale-105"
+                  >
+                    <span>Forgot password?</span>
+                    <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
               </div>
