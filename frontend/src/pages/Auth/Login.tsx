@@ -63,6 +63,8 @@ const Login: React.FC = () => {
     } catch (error: any) {
       if (error.response?.status === 403 && error.response?.data?.error === 'Email not verified') {
         toast.error(error.response.data.message || 'Please verify your email before logging in.')
+      } else if (error.response?.status === 401 && error.response?.data?.error === 'Invalid credentials') {
+        toast.error('Wrong password. Please try again.')
       } else {
         toast.error(error.message || 'Login failed')
       }
