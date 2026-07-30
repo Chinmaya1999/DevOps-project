@@ -249,11 +249,16 @@ const login = async (req, res) => {
 
     const { email, password } = value;
 
+    console.log('Login attempt for email:', email);
+
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
+      console.log('User not found for email:', email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    console.log('User found, isEmailVerified:', user.isEmailVerified);
 
     // Check if user is active
     if (!user.isActive) {
@@ -262,6 +267,7 @@ const login = async (req, res) => {
 
     // Check if email is verified
     if (!user.isEmailVerified) {
+      console.log('Login rejected - email not verified for:', email);
       return res.status(403).json({ 
         error: 'Email not verified',
         message: 'Please verify your email before logging in. Check your inbox for the verification link.'
@@ -280,6 +286,8 @@ const login = async (req, res) => {
 
     // Generate token
     const token = generateToken(user._id);
+
+    console.log('Login successful for:', email);
 
     res.json({
       message: 'Login successful',
@@ -544,6 +552,8 @@ const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
 
+    console.log('Email verification attempt with token:', token);
+
     if (!token) {
       return res.status(400).json({ error: 'Verification token is required' });
     }
@@ -553,6 +563,8 @@ const verifyEmail = async (req, res) => {
       emailVerificationExpires: { $gt: Date.now() }
     });
 
+    console.log('User found with token:', user ? user.email : 'No user found');
+
     if (!user) {
       return res.status(400).json({ 
         error: 'Invalid or expired verification token',
@@ -560,10 +572,14 @@ const verifyEmail = async (req, res) => {
       });
     }
 
+    console.log('Before update - isEmailVerified:', user.isEmailVerified);
+
     user.isEmailVerified = true;
     user.emailVerificationToken = undefined;
     user.emailVerificationExpires = undefined;
     await user.save();
+
+    console.log('After update - isEmailVerified:', user.isEmailVerified);
 
     // Send welcome email after verification
     await sendWelcomeEmail(user.email, user.username);
