@@ -552,62 +552,80 @@ const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
 
-    console.log('Email verification attempt with token:', token);
+    console.log('=== EMAIL VERIFICATION ATTEMPT ===');
+    console.log('Token:', token);
     console.log('Current time:', new Date().toISOString());
+    console.log('Request headers:', JSON.stringify(req.headers, null, 2));
 
     if (!token) {
+      console.log('ERROR: No token provided');
       return res.status(400).json({ error: 'Verification token is required' });
     }
 
-    const user = await User.findOne({
-      emailVerificationToken: token,
-      emailVerificationExpires: { $gt: Date.now() }
-    });
-
-    console.log('User found with token:', user ? user.email : 'No user found');
+    // First try to find user by token without expiration check
+    const userWithoutExpiry = await User.findOne({ emailVerificationToken: token });
     
-    if (user) {
-      console.log('Token expires at:', user.emailVerificationExpires);
-      console.log('Token is valid:', user.emailVerificationExpires > Date.now());
-    }
-
-    if (!user) {
-      // Try to find user by token without expiration check for debugging
-      const userWithoutExpiry = await User.findOne({ emailVerificationToken: token });
-      if (userWithoutExpiry) {
-        console.log('User found but token expired. Expires:', userWithoutExpiry.emailVerificationExpires);
-      }
+    if (!userWithoutExpiry) {
+      console.log('ERROR: No user found with this token');
       return res.status(400).json({ 
-        error: 'Invalid or expired verification token',
-        message: 'Please request a new verification email.'
+        error: 'Invalid verification token',
+        message: 'No user found with this verification token.'
       });
     }
 
-    console.log('Before update - isEmailVerified:', user.isEmailVerified);
+    console.log('User found:', userWithoutExpiry.email);
+    console.log('Token expires at:', userWithoutExpiry.emailVerificationExpires);
+    console.log('Token expired:', userWithoutExpiry.emailVerificationExpires < Date.now());
+    console.log('Current isEmailVerified:', userWithoutExpiry.isEmailVerified);
 
-    user.isEmailVerified = true;
-    user.emailVerificationToken = undefined;
-    user.emailVerificationExpires = undefined;
-    await user.save();
+    // Check if token is expired
+    if (userWithoutExpiry.emailVerificationExpires < Date.now()) {
+      console.log('ERROR: Token has expired');
+      return res.status(400).json({ 
+        error: 'Expired verification token',
+        message: 'This verification link has expired. Please request a new verification email.'
+      });
+    }
 
-    console.log('After update - isEmailVerified:', user.isEmailVerified);
-    console.log('Email verification successful for:', user.email);
+    console.log('Updating user verification status...');
+    
+    userWithoutExpiry.isEmailVerified = true;
+    userWithoutExpiry.emailVerificationToken = undefined;
+    userWithoutExpiry.emailVerificationExpires = undefined;
+    
+    const savedUser = await userWithoutExpiry.save();
+    
+    console.log('User saved successfully');
+    console.log('New isEmailVerified:', savedUser.isEmailVerified);
+    console.log('Email verification successful for:', savedUser.email);
 
     // Send welcome email after verification
-    await sendWelcomeEmail(user.email, user.username);
+    try {
+      await sendWelcomeEmail(savedUser.email, savedUser.username);
+      console.log('Welcome email sent');
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+      // Don't fail the verification if welcome email fails
+    }
 
+    console.log('=== VERIFICATION COMPLETE ===');
+    
     res.json({
       message: 'Email verified successfully',
       user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
+        id: savedUser._id,
+        username: savedUser.username,
+        email: savedUser.email,
         isEmailVerified: true
       }
     });
   } catch (error) {
-    console.error('Email verification error:', error);
-    res.status(500).json({ error: 'Server error during email verification' });
+    console.error('=== EMAIL VERIFICATION ERROR ===');
+    console.error('Error details:', error);
+    res.status(500).json({ 
+      error: 'Server error during email verification',
+      message: error.message 
+    });
   }
 };
 
