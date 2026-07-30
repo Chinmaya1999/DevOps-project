@@ -13,14 +13,19 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://mongodb:27017/mernapp', {
   process.exit(1);
 });
 
-const verifyUserEmail = async (email) => {
+const verifyUserEmail = async (identifier) => {
   try {
-    console.log(`Looking for user with email: ${email}`);
+    console.log(`Looking for user with identifier: ${identifier}`);
     
-    const user = await User.findOne({ email });
+    // Try to find by email first, then by username
+    let user = await User.findOne({ email: identifier });
     
     if (!user) {
-      console.log('User not found with this email');
+      user = await User.findOne({ username: identifier });
+    }
+    
+    if (!user) {
+      console.log('User not found with this email or username');
       process.exit(1);
     }
     
