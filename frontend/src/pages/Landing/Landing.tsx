@@ -917,11 +917,11 @@ const Landing: React.FC = () => {
                   For direct support or inquiries:
                 </p>
                 <a
-                  href="mailto:devincode1@gmail.com"
+                  href="mailto:autodevops.cmcloud.online@gmail.com"
                   className="inline-flex items-center text-blue-600 dark:text-blue-400 font-semibold hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                 >
                   <Mail className="w-5 h-5 mr-2" />
-                  devincode1@gmail.com
+                  autodevops.cmcloud.online@gmail.com
                 </a>
               </div>
             </div>

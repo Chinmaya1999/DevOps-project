@@ -9,8 +9,8 @@ const { registerSchema, loginSchema } = require('../utils/validators');
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER || 'chinmaya.dob1999@gmail.com',
-    pass: process.env.EMAIL_PASSWORD || 'mnzb ndts msgu tobw'
+    user: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
+    pass: process.env.EMAIL_PASSWORD || 'hgxa fqzv pqed oaxu'
   }
 });
 
@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
 const sendWelcomeEmail = async (email, username) => {
   try {
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'chinmaya.dob1999@gmail.com',
+      from: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
       to: email,
       subject: 'Welcome to AutoDevOps - Your DevOps Journey Starts Here! 🚀',
       html: `
@@ -116,7 +116,7 @@ const generateOTP = () => {
 const sendOTPEmail = async (email, username, otp) => {
   try {
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'chinmaya.dob1999@gmail.com',
+      from: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
       to: email,
       subject: 'Verify Your Email - AutoDevOps OTP',
       html: `
@@ -177,7 +177,7 @@ const sendVerificationEmail = async (email, username, token) => {
   try {
     const verificationUrl = `https://cmcloud.online/verify-email?token=${token}`;
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'chinmaya.dob1999@gmail.com',
+      from: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
       to: email,
       subject: 'Verify Your Email - AutoDevOps',
       html: `
@@ -901,7 +901,7 @@ const forgotPassword = async (req, res) => {
     // Send password reset email
     const resetUrl = `https://cmcloud.online/reset-password?token=${resetToken}`;
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'chinmaya.dob1999@gmail.com',
+      from: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
       to: email,
       subject: 'Reset Your Password - AutoDevOps',
       html: `
