@@ -33,7 +33,8 @@ import {
   Github,
   Rocket,
   CreditCard,
-  MessageSquare
+  MessageSquare,
+  Map
 } from 'lucide-react'
 
 const Layout: React.FC = () => {
@@ -247,8 +248,6 @@ const Layout: React.FC = () => {
     { name: 'Validator', href: '/validator', icon: CheckCircle },
     { name: 'History', href: '/history', icon: History },
     { name: 'Upgrade to Premium', href: '/payment', icon: CreditCard },
-
-//  { name: 'DevOps Roadmap', href: '/roadmap', icon: Map }
   ]
 
   const adminNavigation = [
@@ -501,6 +500,17 @@ const Layout: React.FC = () => {
                   title="Dashboard"
                 >
                   <Home className="w-5 h-5" />
+                </button>
+                
+                <button
+                  onClick={() => navigate('/roadmap')}
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative group"
+                  title="DevOps Roadmap"
+                >
+                  <Map className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    DevOps Roadmap
+                  </span>
                 </button>
                 
                 <button
