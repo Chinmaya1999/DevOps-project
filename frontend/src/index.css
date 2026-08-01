@@ -191,3 +191,6 @@
   background-size: 200% 200%;
   animation: gradientShift 4s ease infinite;
 }
+.relative.max-w-7xl.mx-auto.px-4.sm\:px-6.lg\:px-8.pt-20 {
+    padding-top: 3rem;
+}
