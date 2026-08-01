@@ -29,6 +29,15 @@ router.post('/analysis', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Cost analysis error:', error);
+    
+    // Handle specific AWS errors
+    if (error.name === 'AccessDeniedException' || error.message?.includes('not enabled for cost explorer')) {
+      return res.status(403).json({
+        success: false,
+        message: 'AWS Cost Explorer is not enabled for this account or user. Please enable Cost Explorer in AWS Billing Console and ensure your IAM user has the necessary permissions (ce:GetCostAndUsage, ce:GetDimensionValues, ce:GetCostForecast).',
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to perform cost analysis',

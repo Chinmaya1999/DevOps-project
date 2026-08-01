@@ -93,7 +93,7 @@ const CloudCostAnalysis: React.FC = () => {
         message.success('Cost analysis completed successfully!');
       } else {
         setError(response.data.message || 'Failed to fetch cost data');
-        message.error('Failed to fetch cost data');
+        message.error(response.data.message || 'Failed to fetch cost data');
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to connect to the server';

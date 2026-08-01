@@ -14,11 +14,11 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'https://api.cmcloud.online',
+        target: 'http://localhost:5001',
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'https://api.cmcloud.online',
+        target: 'http://localhost:5001',
         changeOrigin: true,
       },
     },
