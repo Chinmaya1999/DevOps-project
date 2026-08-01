@@ -362,12 +362,35 @@ class AWSCostAnalysisService {
 
   async getCompleteCostAnalysis() {
     try {
-      const [monthlyCosts, serviceCosts, regionCosts, forecast] = await Promise.all([
+      const results = await Promise.allSettled([
         this.getMonthlyCosts(6),
         this.getCostByService(),
         this.getCostByRegion(),
         this.getCostForecast(3),
       ]);
+
+      // Check if all requests failed with AccessDeniedException
+      const allAccessDenied = results.every(result => {
+        if (result.status !== 'rejected') return false;
+        // Check error constructor name and message
+        const isAccessDenied = 
+          result.reason.constructor?.name === 'AccessDeniedException' ||
+          result.reason.name === 'AccessDeniedException' ||
+          result.reason.message?.includes('not enabled for cost explorer') ||
+          (result.reason.$fault === 'client' && result.reason.__type === 'AccessDeniedException');
+        return isAccessDenied;
+      });
+
+      if (allAccessDenied) {
+        console.log('All AWS Cost Explorer requests failed with AccessDenied - returning demo data');
+        return this.getDemoData();
+      }
+
+      // Extract successful results or use empty arrays
+      const monthlyCosts = results[0].status === 'fulfilled' ? results[0].value : [];
+      const serviceCosts = results[1].status === 'fulfilled' ? results[1].value : [];
+      const regionCosts = results[2].status === 'fulfilled' ? results[2].value : [];
+      const forecast = results[3].status === 'fulfilled' ? results[3].value : { historical: [], forecast: [], totalForecast: 0 };
 
       const recommendations = this.generateRecommendations({ serviceCosts });
 
@@ -390,6 +413,66 @@ class AWSCostAnalysisService {
       console.error('Error in complete cost analysis:', error);
       throw error;
     }
+  }
+
+  getDemoData() {
+    const demoServiceCosts = [
+      { serviceName: 'Amazon EC2', amount: 1250.50, currency: 'USD' },
+      { serviceName: 'Amazon RDS', amount: 450.25, currency: 'USD' },
+      { serviceName: 'Amazon S3', amount: 180.75, currency: 'USD' },
+      { serviceName: 'AWS Lambda', amount: 95.30, currency: 'USD' },
+      { serviceName: 'Amazon CloudFront', amount: 65.20, currency: 'USD' },
+      { serviceName: 'AWS Data Transfer', amount: 45.10, currency: 'USD' },
+    ];
+
+    const demoRegionCosts = [
+      { regionName: 'us-east-1', amount: 890.40, currency: 'USD' },
+      { regionName: 'ap-south-1', amount: 520.30, currency: 'USD' },
+      { regionName: 'eu-west-1', amount: 380.25, currency: 'USD' },
+      { regionName: 'us-west-2', amount: 290.15, currency: 'USD' },
+    ];
+
+    const demoMonthlyCosts = [
+      { timePeriod: { Start: '2026-02-01', End: '2026-03-01' }, total: 1850.00, currency: 'USD', groups: [] },
+      { timePeriod: { Start: '2026-03-01', End: '2026-04-01' }, total: 1920.50, currency: 'USD', groups: [] },
+      { timePeriod: { Start: '2026-04-01', End: '2026-05-01' }, total: 1780.25, currency: 'USD', groups: [] },
+      { timePeriod: { Start: '2026-05-01', End: '2026-06-01' }, total: 2100.75, currency: 'USD', groups: [] },
+      { timePeriod: { Start: '2026-06-01', End: '2026-07-01' }, total: 2050.30, currency: 'USD', groups: [] },
+      { timePeriod: { Start: '2026-07-01', End: '2026-08-01' }, total: 2085.60, currency: 'USD', groups: [] },
+    ];
+
+    const demoForecast = {
+      historical: [
+        { date: '2026-05-01', amount: 2100.75, currency: 'USD' },
+        { date: '2026-06-01', amount: 2050.30, currency: 'USD' },
+        { date: '2026-07-01', amount: 2085.60, currency: 'USD' },
+      ],
+      forecast: [
+        { date: '2026-08-01', amount: 2150.00, currency: 'USD' },
+        { date: '2026-09-01', amount: 2200.00, currency: 'USD' },
+        { date: '2026-10-01', amount: 2250.00, currency: 'USD' },
+      ],
+      totalForecast: 6600.00,
+    };
+
+    const recommendations = this.generateRecommendations({ serviceCosts: demoServiceCosts });
+
+    return {
+      monthlyCosts: demoMonthlyCosts,
+      serviceCosts: demoServiceCosts,
+      regionCosts: demoRegionCosts,
+      forecast: demoForecast,
+      recommendations,
+      summary: {
+        totalMonthlyCost: demoServiceCosts.reduce((sum, service) => sum + service.amount, 0),
+        topService: demoServiceCosts[0],
+        topRegion: demoRegionCosts[0],
+        projectedSavings: recommendations
+          .filter(r => r.potentialSavings !== 'Variable' && r.potentialSavings !== 'Prevent overspending')
+          .reduce((sum, r) => sum + parseFloat(r.potentialSavings.replace('$', '')), 0),
+      },
+      isDemo: true,
+    };
   }
 }
 

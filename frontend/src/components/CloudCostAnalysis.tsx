@@ -90,7 +90,11 @@ const CloudCostAnalysis: React.FC = () => {
 
       if (response.data.success) {
         setCostData(response.data.data);
-        message.success('Cost analysis completed successfully!');
+        if (response.data.data.isDemo) {
+          message.warning('Showing demo data - AWS Cost Explorer not enabled');
+        } else {
+          message.success('Cost analysis completed successfully!');
+        }
       } else {
         setError(response.data.message || 'Failed to fetch cost data');
         message.error(response.data.message || 'Failed to fetch cost data');
