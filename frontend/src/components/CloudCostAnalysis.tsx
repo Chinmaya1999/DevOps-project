@@ -43,7 +43,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import axios from 'axios';
+import api from '../services/api';
 
 const { Option } = Select;
 
@@ -73,18 +73,12 @@ const CloudCostAnalysis: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        '/api/cost-analysis/analysis',
+      const response = await api.post(
+        '/cost-analysis/analysis',
         {
           accessKeyId: values.accessKeyId,
           secretAccessKey: values.secretAccessKey,
           region: values.region || 'us-east-1',
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         }
       );
 
