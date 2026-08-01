@@ -24,6 +24,7 @@ import Deployments from './pages/Deployments/Deployments'
 import Payment from './pages/Payment/Payment'
 import PaymentVerification from './pages/Admin/PaymentVerification'
 import Contact from './pages/Contact/Contact'
+import CloudCostAnalysis from './components/CloudCostAnalysis'
 import Features from './pages/Features/Features'
 import Pricing from './pages/Pricing/Pricing'
 import About from './pages/About/About'
@@ -90,6 +91,7 @@ function App() {
         <Route path="blogs/:id" element={<BlogDetail />} />
         <Route path="blogs/:id/edit" element={<EditBlog />} />
         <Route path="blogs/my-blogs" element={<MyBlogs />} />
+        <Route path="cloud-cost-analysis" element={<CloudCostAnalysis />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>

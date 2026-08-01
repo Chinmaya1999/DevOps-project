@@ -18,6 +18,7 @@ import {
   Space,
   Divider
 } from 'antd';
+import CloudCostAnalysis from '../../components/CloudCostAnalysis';
 import {
   DashboardOutlined,
   CloudOutlined,
@@ -98,6 +99,11 @@ const ComprehensiveDashboard: React.FC<DashboardProps> = () => {
       key: 'billing',
       icon: <DollarOutlined />,
       label: 'Billing',
+    },
+    {
+      key: 'cost-analysis',
+      icon: <BarChartOutlined />,
+      label: 'Cost Analysis',
     },
     {
       key: 'users',
@@ -229,6 +235,8 @@ const ComprehensiveDashboard: React.FC<DashboardProps> = () => {
         return renderMonitoring();
       case 'billing':
         return renderBilling();
+      case 'cost-analysis':
+        return renderCostAnalysis();
       case 'users':
         return renderUsers();
       case 'settings':
@@ -705,6 +713,8 @@ const ComprehensiveDashboard: React.FC<DashboardProps> = () => {
       />
     </Card>
   );
+
+  const renderCostAnalysis = () => <CloudCostAnalysis />;
 
   const renderUsers = () => (
     <Card title="User Management" extra={<Button type="primary" icon={<PlusOutlined />}>Add User</Button>}>

@@ -24,6 +24,7 @@ const paymentRoutes = require('./routes/payment');
 const contactRoutes = require('./routes/contact');
 const chatRoutes = require('./routes/chat');
 const blogRoutes = require('./routes/blog');
+const costAnalysisRoutes = require('./routes/costAnalysis');
 const { initializeSocket } = require('./socket');
 
 const app = express();
@@ -140,6 +141,7 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/blogs', blogRoutes);
+app.use('/api/cost-analysis', costAnalysisRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../../services/api'
+import CloudCostAnalysis from '../../components/CloudCostAnalysis'
 
 interface AppUser {
   _id: string
@@ -107,7 +108,7 @@ interface TerraformDashboardStats {
 }
 
 const Admin: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'docs' | 'create' | 'terraform' | 'users' | 'chat' | 'blogs'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'docs' | 'create' | 'terraform' | 'users' | 'chat' | 'blogs' | 'cost-analysis'>('dashboard')
   const [users, setUsers] = useState<AppUser[]>([])
   const [userStats, setUserStats] = useState<UserManagementStats | null>(null)
   const [editingUser, setEditingUser] = useState<AppUser | null>(null)
@@ -708,6 +709,17 @@ const Admin: React.FC = () => {
             >
               <FileText className="w-4 h-4 inline mr-2" />
               Blog Management
+            </button>
+            <button
+              onClick={() => setActiveTab('cost-analysis')}
+              className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'cost-analysis'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-secondary-500 hover:text-secondary-700 dark:hover:text-secondary-300'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 inline mr-2" />
+              Cost Analysis
             </button>
           </div>
         </div>
@@ -2064,6 +2076,13 @@ const Admin: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Cost Analysis Tab */}
+        {activeTab === 'cost-analysis' && (
+          <div className="space-y-6">
+            <CloudCostAnalysis />
           </div>
         )}
       </div>

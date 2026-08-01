@@ -34,7 +34,8 @@ import {
   Rocket,
   CreditCard,
   MessageSquare,
-  Map
+  Map,
+  DollarSign
 } from 'lucide-react'
 
 const Layout: React.FC = () => {
@@ -247,6 +248,7 @@ const Layout: React.FC = () => {
     { name: 'Terraform Demos', href: '/terraform-demos', icon: Database },
     { name: 'Validator', href: '/validator', icon: CheckCircle },
     { name: 'History', href: '/history', icon: History },
+    { name: 'Cloud Cost Analysis', href: '/cloud-cost-analysis', icon: DollarSign },
     { name: 'Upgrade to Premium', href: '/payment', icon: CreditCard },
   ]
 
