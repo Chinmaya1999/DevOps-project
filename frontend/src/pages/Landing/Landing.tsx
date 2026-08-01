@@ -191,9 +191,9 @@ const Landing: React.FC = () => {
             </h1>
 
             <p className="text-2xl md:text-3xl text-gray-600 dark:text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed fade-in-up" style={{ animationDelay: '0.2s' }}>
-              <span className="font-bold text-gradient">Best DevOps Platform</span> for one-click deployment, predefined Terraform templates, 
-              <br className="hidden md:block" />
-              Jenkins CI/CD pipelines, Docker containerization, Kubernetes orchestration, DevOps community collaboration and Cloud Infrastructure Cost Analysis.
+              <span className="font-bold text-gradient">Best DevOps Platform</span> for one-click deployment, Terraform templates, 
+             
+              Jenkins CI/CD , Docker , Kubernetes , DevOps community collaboration and Cloud Infrastructure Cost Analysis.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16 fade-in-up" style={{ animationDelay: '0.4s' }}>
