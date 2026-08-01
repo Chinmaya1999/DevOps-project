@@ -236,6 +236,7 @@ const Layout: React.FC = () => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Vision - One-Click Deploy', href: '/vision', icon: Rocket },
+    { name: 'Cloud Cost Analysis', href: '/cloud-cost-analysis', icon: DollarSign },
     { name: 'Deployments', href: '/deployments', icon: Server },
     { name: 'GitHub Integration', href: '/github', icon: Github },
     { name: 'Jenkins Pipeline', href: '/generator/jenkins', icon: Server },
@@ -248,7 +249,6 @@ const Layout: React.FC = () => {
     { name: 'Terraform Demos', href: '/terraform-demos', icon: Database },
     { name: 'Validator', href: '/validator', icon: CheckCircle },
     { name: 'History', href: '/history', icon: History },
-    { name: 'Cloud Cost Analysis', href: '/cloud-cost-analysis', icon: DollarSign },
     { name: 'Upgrade to Premium', href: '/payment', icon: CreditCard },
   ]
 
