@@ -65,7 +65,7 @@ When you meet a new tool, ask one question: **"What painful manual job does this
 
 ## The journey of your code {#deploy-flow}
 
-This is the picture on the AutoDevOps home page. Here is what happens when you change a line of code and run `git push`:
+This is the picture on the DeployDojo home page. Here is what happens when you change a line of code and run `git push`:
 
 1. **GitHub** receives your code and saves the new version.
 2. **GitHub Actions** (the robot) wakes up, downloads the code, runs the tests, and builds it.
@@ -77,7 +77,7 @@ This is the picture on the AutoDevOps home page. Here is what happens when you c
 
 You will do steps 1, 2, 3, 6 and 7 yourself in the guides, on a real server.
 
-## What AutoDevOps does for you {#what-autodevops-does}
+## What DeployDojo does for you {#what-deploydojo-does}
 
 This platform is a workshop for exactly that journey:
 

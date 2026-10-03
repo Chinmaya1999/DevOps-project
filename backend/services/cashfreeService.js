@@ -53,7 +53,7 @@ const service = {
         ...(customer.name ? { customer_name: customer.name } : {}),
       },
       order_meta: { return_url: returnUrl, ...(notifyUrl ? { notify_url: notifyUrl } : {}) },
-      order_note: 'AutoDevOps Pro subscription',
+      order_note: 'DeployDojo Pro subscription',
     };
     const res = await service.http.post(`${baseUrl()}/pg/orders`, body, { headers: headers(), timeout: 15000 });
     return res.data; // { order_id, payment_session_id, order_status, ... }

@@ -1,7 +1,8 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { GitBranch, Menu, X } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import ThemeToggle from '../UI/ThemeToggle'
+import Logo from '../UI/Logo'
 
 interface HeaderProps {
   showAuthButtons?: boolean
@@ -40,12 +41,7 @@ const Header: React.FC<HeaderProps> = ({ showAuthButtons = true, transparent = f
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <span className="p-1.5 rounded-lg hero-gradient shadow-lg shadow-cyan-500/30 group-hover:rotate-6 transition-transform">
-            <GitBranch className="w-5 h-5 text-white" />
-          </span>
-          <span className="font-display text-lg font-bold text-slate-900 dark:text-white tracking-tight">AutoDevOps</span>
-        </Link>
+        <Link to="/" aria-label="DeployDojo home"><Logo size={36} /></Link>
 
         <nav className="hidden md:flex items-center gap-1" aria-label="Main">
           {navigation.map((item) => (

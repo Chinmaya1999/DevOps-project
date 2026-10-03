@@ -34,6 +34,6 @@ test('recovery codes and otpauth url', () => {
   const codes = generateRecoveryCodes();
   assert.strictEqual(new Set(codes).size, 8);
   codes.forEach((c) => assert.match(c, /^[a-f0-9]{5}-[a-f0-9]{5}$/));
-  const url = otpauthUrl('jane@example.com', 'AutoDevOps', 'ABC234');
-  assert.match(url, /^otpauth:\/\/totp\/AutoDevOps:jane%40example\.com\?secret=ABC234&issuer=AutoDevOps/);
+  const url = otpauthUrl('jane@example.com', 'DeployDojo', 'ABC234');
+  assert.match(url, /^otpauth:\/\/totp\/DeployDojo:jane%40example\.com\?secret=ABC234&issuer=DeployDojo/);
 });

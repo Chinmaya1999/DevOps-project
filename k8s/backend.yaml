@@ -15,7 +15,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: backend
-          image: awsmallick1999/infrapilot-backend:latest
+          image: ghcr.io/chinmaya1999/infrapilot-backend:latest
           ports:
             - containerPort: 5001
           envFrom:

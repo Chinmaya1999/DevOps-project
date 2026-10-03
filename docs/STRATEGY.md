@@ -1,4 +1,4 @@
-# AutoDevOps — product analysis and roadmap
+# DeployDojo — product analysis and roadmap
 
 ## 1. What DevOps engineers actually struggle with every day
 

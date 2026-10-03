@@ -12,8 +12,8 @@ const GuideView: React.FC = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    if (guide) document.title = `${guide.title} · AutoDevOps`
-    return () => { document.title = 'AutoDevOps' }
+    if (guide) document.title = `${guide.title} · DeployDojo`
+    return () => { document.title = 'DeployDojo' }
   }, [slug]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!guide) {

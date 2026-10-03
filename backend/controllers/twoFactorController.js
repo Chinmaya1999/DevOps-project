@@ -7,7 +7,7 @@ const { getEffectivePlan } = require('../services/plans');
 
 const MAX_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
-const ISSUER = 'AutoDevOps';
+const ISSUER = 'DeployDojo';
 
 /** Accepts a TOTP code or a recovery code. Returns { ok, user mutated } — caller saves. */
 function checkSecondFactor(user, { code, recoveryCode }) {

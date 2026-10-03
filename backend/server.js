@@ -60,6 +60,7 @@ app.use(helmet({
 // CORS configuration - Allow multiple origins
 const allowedOrigins = [
   'https://cmcloud.online',
+  'https://deploydojo.cmcloud.online',
   'https://www.cmcloud.online',
   'http://localhost:3000',
   'http://localhost:3001',

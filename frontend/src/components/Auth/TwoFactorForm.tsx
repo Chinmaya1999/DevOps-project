@@ -38,7 +38,7 @@ const TwoFactorForm: React.FC<{ challenge: string; onExpired: () => void }> = ({
     <form onSubmit={submit} className="space-y-5">
       <div className="flex items-start gap-3 p-4 rounded-xl bg-violet-500/10 border border-violet-500/25 text-sm">
         <ShieldCheck className="w-5 h-5 text-violet-600 dark:text-violet-300 shrink-0 mt-0.5" />
-        <p>{useRecovery ? 'Enter one of your saved recovery codes. Each one works only once.' : 'Open your authenticator app and enter the 6-digit code for AutoDevOps.'}</p>
+        <p>{useRecovery ? 'Enter one of your saved recovery codes. Each one works only once.' : 'Open your authenticator app and enter the 6-digit code for DeployDojo.'}</p>
       </div>
       {error && <div role="alert" className="p-3 rounded-xl text-sm bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-300">{error}</div>}
       <div>

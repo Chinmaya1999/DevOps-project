@@ -67,9 +67,9 @@ const Features: React.FC = () => (
     <Header showAuthButtons />
     <main className="max-w-6xl mx-auto px-4 sm:px-6 py-14">
       <header className="max-w-3xl">
-        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight">What AutoDevOps <span className="text-gradient">does</span></h1>
+        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight">What DeployDojo <span className="text-gradient">does</span></h1>
         <p className="mt-4 text-lg text-slate-600 dark:text-gray-300">
-          AutoDevOps is a <strong>learning platform and toolbox for DevOps</strong>. Beginners learn by deploying real projects on a real server.
+          DeployDojo is a <strong>learning platform and toolbox for DevOps</strong>. Beginners learn by deploying real projects on a real server.
           Working engineers generate configs, check them, and fix production errors faster.
         </p>
       </header>

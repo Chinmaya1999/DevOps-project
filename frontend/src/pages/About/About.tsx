@@ -12,7 +12,7 @@ const About: React.FC = () => {
         <div className="text-center mb-16">
           <Sparkles className="w-16 h-16 text-blue-600 mx-auto mb-6" />
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-            About AutoDevOps
+            About DeployDojo
           </h1>
           <p className="text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
             Built by DevOps engineers, for DevOps engineers
@@ -25,10 +25,10 @@ const About: React.FC = () => {
               Our Mission
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
-              AutoDevOps was built by DevOps engineers, for DevOps engineers. We understand the pain of manual configuration, the complexity of infrastructure as code, and the need for reliable, production-ready solutions.
+              DeployDojo was built by DevOps engineers, for DevOps engineers. We understand the pain of manual configuration, the complexity of infrastructure as code, and the need for reliable, production-ready solutions.
             </p>
             <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-              Our mission is to democratize DevOps by making enterprise-grade infrastructure accessible to everyone. Whether you are a startup founder, a seasoned engineer, or a student learning DevOps, AutoDevOps provides the tools and community you need to succeed.
+              Our mission is to democratize DevOps by making enterprise-grade infrastructure accessible to everyone. Whether you are a startup founder, a seasoned engineer, or a student learning DevOps, DeployDojo provides the tools and community you need to succeed.
             </p>
             
             <div className="space-y-4">

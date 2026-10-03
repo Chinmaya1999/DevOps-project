@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react'
 
 const LINES = [
-  '$ autodevops generate terraform --cloud aws --stack web-app',
+  '$ deploydojo generate terraform --cloud aws --stack web-app',
   '✔ VPC, subnets, security groups',
   '✔ ECS cluster + ALB + autoscaling',
   '✔ Remote state (S3 + DynamoDB lock)',
   '✔ Security scan: 0 critical, 0 high',
   '✔ Estimated cost: $42.18 / month',
-  '$ autodevops deploy --one-click',
+  '$ deploydojo deploy --one-click',
 ]
 
 /** Typewriter terminal used on the landing page. Static when reduced-motion is requested. */
@@ -27,7 +27,7 @@ const TerminalDemo: React.FC = () => {
         <span className="w-3 h-3 rounded-full bg-red-500/80" />
         <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
         <span className="w-3 h-3 rounded-full bg-green-500/80" />
-        <span className="ml-3 text-xs text-gray-400">autodevops — zsh</span>
+        <span className="ml-3 text-xs text-gray-400">deploydojo — zsh</span>
       </div>
       <div className="p-5 space-y-1.5 min-h-[230px] text-left">
         {LINES.slice(0, Math.min(count, LINES.length)).map((l, i) => (

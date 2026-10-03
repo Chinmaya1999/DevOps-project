@@ -74,8 +74,8 @@ const Security: React.FC = () => {
 
   const copy = async (text: string) => { try { await navigator.clipboard.writeText(text); toast.success('Copied') } catch { toast.error('Copy failed') } }
   const download = () => {
-    const blob = new Blob([`AutoDevOps recovery codes\nEach code works once.\n\n${codes.join('\n')}\n`], { type: 'text/plain' })
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'autodevops-recovery-codes.txt'; a.click(); URL.revokeObjectURL(a.href)
+    const blob = new Blob([`DeployDojo recovery codes\nEach code works once.\n\n${codes.join('\n')}\n`], { type: 'text/plain' })
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'deploydojo-recovery-codes.txt'; a.click(); URL.revokeObjectURL(a.href)
   }
 
   return (
@@ -102,7 +102,7 @@ const Security: React.FC = () => {
               <li>Scan the QR code with your authenticator app.</li><li>Enter the 6-digit code it shows.</li>
             </ol>
             <div className="flex flex-col sm:flex-row gap-5 items-center">
-              <img src={setup.qr} alt="QR code to add AutoDevOps to your authenticator app" width={176} height={176} className="rounded-xl bg-white p-2" />
+              <img src={setup.qr} alt="QR code to add DeployDojo to your authenticator app" width={176} height={176} className="rounded-xl bg-white p-2" />
               <div className="text-sm w-full">
                 <p className="text-slate-600 dark:text-gray-400">Can’t scan? Enter this key manually:</p>
                 <div className="mt-1 flex items-center gap-2"><code className="font-mono text-sm break-all bg-slate-100 dark:bg-black/30 rounded-lg px-3 py-2">{setup.secret}</code>

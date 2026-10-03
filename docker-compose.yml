@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: awsmallick1999/infrapilot-frontend:latest
+    image: ghcr.io/chinmaya1999/infrapilot-frontend:latest
     container_name: frontend
     restart: always
     ports:
@@ -11,7 +11,7 @@ services:
       - app-network
 
   backend:
-    image: awsmallick1999/infrapilot-backend:latest
+    image: ghcr.io/chinmaya1999/infrapilot-backend:latest
     container_name: backend
     restart: always
     ports:

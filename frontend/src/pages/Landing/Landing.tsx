@@ -1,7 +1,7 @@
 import React, { Suspense, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  GitBranch, Zap, Shield, ArrowRight, Users, Rocket, Cpu,
+  Zap, Shield, ArrowRight, Users, Rocket, Cpu,
   Send, Container, Boxes, Terminal, Activity, Lock, CheckCircle,
   GraduationCap, Download, BookOpen, LifeBuoy, Globe, Clock, Server,
 } from 'lucide-react'
@@ -13,6 +13,7 @@ import api from '../../services/api'
 import { STAGES } from '../../content/learn/curriculum'
 import { API_BASE } from '../../services/api'
 import { useTheme } from '../../context/ThemeContext'
+import Logo from '../../components/UI/Logo'
 
 const DeployFlowScene = React.lazy(() => import('../../components/Three/DeployFlowScene'))
 
@@ -160,10 +161,10 @@ const Landing: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Reveal className="max-w-2xl">
             <h2 id="features-heading" className="font-display text-4xl md:text-5xl font-bold tracking-tight">
-              What AutoDevOps <span className="text-gradient">does for you</span>
+              What DeployDojo <span className="text-gradient">does for you</span>
             </h2>
             <p className="mt-4 text-lg text-slate-600 dark:text-gray-400">
-              AutoDevOps is a <strong>learning platform and a toolbox</strong> for DevOps. Beginners learn by deploying real projects. Working engineers generate configs, check them, and fix production errors faster.
+              DeployDojo is a <strong>learning platform and a toolbox</strong> for DevOps. Beginners learn by deploying real projects. Working engineers generate configs, check them, and fix production errors faster.
             </p>
           </Reveal>
           <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -347,15 +348,15 @@ const Landing: React.FC = () => {
       <footer className="border-t border-slate-200 dark:border-white/10 py-12 bg-slate-100 dark:bg-ink-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-4 gap-8 text-sm">
           <div>
-            <div className="flex items-center gap-2 font-display font-bold text-lg"><GitBranch className="w-5 h-5 text-cyan-600 dark:text-cyan-300" /> AutoDevOps</div>
-            <p className="mt-3 text-slate-600 dark:text-gray-400">Production-ready DevOps configurations, in seconds.</p>
+            <Logo size={38} />
+            <p className="mt-3 text-slate-600 dark:text-gray-400">Learn DevOps by deploying real projects. Generate, check and fix with confidence.</p>
           </div>
           <FooterCol title="Product" links={[['Features', '/features'], ['Pricing', '/pricing']]} />
           <FooterCol title="Company" links={[['About', '/about'], ['Contact', '/contact']]} />
           <FooterCol title="Account" links={[['Sign in', '/login'], ['Create account', '/register']]} />
         </div>
         <div className="mt-10 text-center text-slate-500 text-sm">
-          © {new Date().getFullYear()} AutoDevOps · Built by{' '}
+          © {new Date().getFullYear()} DeployDojo · Built by{' '}
           <a href="https://github.com/Chinmaya1999" target="_blank" rel="noopener noreferrer" className="text-cyan-700 dark:text-cyan-300 hover:text-cyan-600 dark:hover:text-cyan-200">Chinmaya Kumar Mallick</a>
         </div>
       </footer>

@@ -7,8 +7,9 @@ on:
     branches: [ main, master ]
 
 env:
-  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  # Images live in GitHub Container Registry: no separate registry password to manage
+  BACKEND_IMAGE: ghcr.io/chinmaya1999/infrapilot-backend
+  FRONTEND_IMAGE: ghcr.io/chinmaya1999/infrapilot-frontend
 
 jobs:
   # Quality gate: nothing is built or deployed unless this passes
@@ -50,6 +51,9 @@ jobs:
   build-backend:
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -60,8 +64,9 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Backend
         uses: docker/build-push-action@v4
@@ -70,14 +75,18 @@ jobs:
           file: ./backend/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            awsmallick1999/infrapilot-backend:latest
-            awsmallick1999/infrapilot-backend:${{ github.sha }}
-          cache-from: type=registry,ref=awsmallick1999/infrapilot-backend:buildcache
-          cache-to: type=registry,ref=awsmallick1999/infrapilot-backend:buildcache,mode=max
+            ${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          labels: org.opencontainers.image.source=https://github.com/Chinmaya1999/DevOps-project
+          cache-from: type=registry,ref=${{ env.BACKEND_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.BACKEND_IMAGE }}:buildcache,mode=max
 
   build-frontend:
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -88,8 +97,9 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Frontend
         uses: docker/build-push-action@v4
@@ -98,16 +108,20 @@ jobs:
           file: ./frontend/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            awsmallick1999/infrapilot-frontend:latest
-            awsmallick1999/infrapilot-frontend:${{ github.sha }}
-          cache-from: type=registry,ref=awsmallick1999/infrapilot-frontend:buildcache
-          cache-to: type=registry,ref=awsmallick1999/infrapilot-frontend:buildcache,mode=max
+            ${{ env.FRONTEND_IMAGE }}:latest
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          labels: org.opencontainers.image.source=https://github.com/Chinmaya1999/DevOps-project
+          cache-from: type=registry,ref=${{ env.FRONTEND_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.FRONTEND_IMAGE }}:buildcache,mode=max
 
   # Deploy to AWS EC2: pull, start, health-check, and roll back automatically if the new version is unhealthy
   deploy:
     needs: [build-backend, build-frontend]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: Prepare environment payload
         env:
@@ -119,11 +133,14 @@ jobs:
           [ ${#JWT_SECRET} -ge 32 ] || { echo "::error::Repository secret JWT_SECRET is missing or shorter than 32 characters"; exit 1; }
           [[ "$DATA_ENCRYPTION_KEY" =~ ^[0-9a-fA-F]{64}$ ]] || { echo "::error::Repository secret DATA_ENCRYPTION_KEY must be 64 hex characters"; exit 1; }
           {
-            printf '%s\n' "$ENV_FILE" | grep -vE '^(JWT_SECRET|DATA_ENCRYPTION_KEY|NODE_ENV|TRUST_PROXY)='
+            printf '%s\n' "$ENV_FILE" | grep -vE '^(JWT_SECRET|DATA_ENCRYPTION_KEY|NODE_ENV|TRUST_PROXY|FRONTEND_URL|API_PUBLIC_URL|COOKIE_SECURE)='
             echo "JWT_SECRET=$JWT_SECRET"
             echo "DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY"
             echo "NODE_ENV=production"
             echo "TRUST_PROXY=1"
+            echo "FRONTEND_URL=https://deploydojo.cmcloud.online"
+            echo "API_PUBLIC_URL=https://api.cmcloud.online"
+            echo "COOKIE_SECURE=true"
           } > env.prod
           B64=$(base64 -w0 env.prod)
           echo "::add-mask::$B64"
@@ -134,21 +151,25 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         env:
           ENV_B64: ${{ env.ENV_B64 }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
-          envs: ENV_B64
+          envs: ENV_B64,GHCR_USER,GHCR_TOKEN
           script_stop: true
           script: |
             set -u
-            BACKEND=awsmallick1999/infrapilot-backend
-            FRONTEND=awsmallick1999/infrapilot-frontend
+            BACKEND=${{ env.BACKEND_IMAGE }}
+            FRONTEND=${{ env.FRONTEND_IMAGE }}
 
-            # 1. Download new images BEFORE touching the running site
+            # 1. Download new images BEFORE touching the running site (short-lived token, removed afterwards)
+            printf '%s' "$GHCR_TOKEN" | sudo docker login ghcr.io -u "$GHCR_USER" --password-stdin
             sudo docker pull $BACKEND:latest
             sudo docker pull $FRONTEND:latest
+            sudo docker logout ghcr.io >/dev/null
 
             # 2. Write the environment file (kept private to this user)
             umask 077

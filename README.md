@@ -1,4 +1,4 @@
-# AutoDevOps (InfraPilot)
+# DeployDojo (InfraPilot)
 
 A DevOps learning platform and toolbox.
 

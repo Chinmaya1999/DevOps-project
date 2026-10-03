@@ -228,7 +228,7 @@ guard('two-factor: enable, challenge-gated login, replay + wrong codes rejected,
   // setup + enable
   const setup = await call('/api/auth/2fa/setup', { method: 'POST', cookie, ip, csrf });
   const secret = setup.json.data.secret;
-  assert.match(setup.json.data.otpauthUrl, /^otpauth:\/\/totp\/AutoDevOps:/);
+  assert.match(setup.json.data.otpauthUrl, /^otpauth:\/\/totp\/DeployDojo:/);
   assert.strictEqual((await call('/api/auth/2fa/enable', { method: 'POST', cookie, ip, csrf, body: { code: '000000' } })).status, 400);
   const code1 = hotp(secret, stepAt());
   const enabled = await call('/api/auth/2fa/enable', { method: 'POST', cookie, ip, csrf, body: { code: code1 } });

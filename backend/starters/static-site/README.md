@@ -4,7 +4,7 @@ A tiny portfolio site: `index.html`, `style.css`, `script.js`.
 
 Preview it on your computer: double-click `index.html`, or run `npx serve .` and open the address it prints.
 
-Deploy it with the AutoDevOps guide "Deploy a static website". Files:
+Deploy it with the DeployDojo guide "Deploy a static website". Files:
 
 | File | What it is |
 |------|-----------|

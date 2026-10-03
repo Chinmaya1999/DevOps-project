@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Boxes, Container, GitBranch, Server, Workflow, ShieldCheck, Zap, Lock } from 'lucide-react'
 import ThemeToggle from '../UI/ThemeToggle'
+import Logo from '../UI/Logo'
 
 const FLOW = [
   { icon: GitBranch, label: 'git push', color: '#e2e8f0' },
@@ -26,10 +27,7 @@ const AuthShell: React.FC<{
       <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-cyan-500/20 blur-3xl" />
       <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-violet-600/25 blur-3xl" />
 
-      <Link to="/" className="relative flex items-center gap-2.5 w-fit" tabIndex={-1}>
-        <span className="p-1.5 rounded-lg hero-gradient shadow-lg shadow-cyan-500/30"><GitBranch className="w-5 h-5" /></span>
-        <span className="font-display text-lg font-bold">AutoDevOps</span>
-      </Link>
+      <Link to="/" className="relative w-fit" tabIndex={-1}><Logo size={40} tone="light" /></Link>
 
       <div className="relative">
         <h2 className="font-display text-4xl font-bold leading-tight">From commit to <span className="text-gradient">production</span>,<br />without the guesswork.</h2>
@@ -58,10 +56,7 @@ const AuthShell: React.FC<{
 
     <main className="flex flex-col min-h-screen">
       <div className="flex items-center justify-between p-4 sm:p-6">
-        <Link to="/" className="lg:invisible flex items-center gap-2">
-          <span className="p-1.5 rounded-lg hero-gradient"><GitBranch className="w-4 h-4 text-white" /></span>
-          <span className="font-display font-bold">AutoDevOps</span>
-        </Link>
+        <Link to="/" className="lg:invisible" aria-label="DeployDojo home"><Logo size={32} /></Link>
         <ThemeToggle />
       </div>
       <div className="flex-1 flex items-center justify-center px-4 pb-10">

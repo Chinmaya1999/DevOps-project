@@ -28,7 +28,7 @@ const sendWelcomeEmail = async (email, username) => {
     const mailOptions = {
       from: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
       to: email,
-      subject: 'Welcome to AutoDevOps - Your DevOps Journey Starts Here! 🚀',
+      subject: 'Welcome to DeployDojo - Your DevOps Journey Starts Here! 🚀',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
           <div style="background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.1);">
@@ -36,7 +36,7 @@ const sendWelcomeEmail = async (email, username) => {
               <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
                 <span style="font-size: 40px;">⚡</span>
               </div>
-              <h1 style="color: #333; margin: 0; font-size: 28px; font-weight: bold;">Welcome to AutoDevOps!</h1>
+              <h1 style="color: #333; margin: 0; font-size: 28px; font-weight: bold;">Welcome to DeployDojo!</h1>
               <p style="color: #666; margin: 10px 0 0; font-size: 16px;">Your DevOps journey starts here</p>
             </div>
             
@@ -45,7 +45,7 @@ const sendWelcomeEmail = async (email, username) => {
                 Hello <strong>${username}</strong>,
               </p>
               <p style="margin: 15px 0 0; color: #555; font-size: 15px; line-height: 1.6;">
-                Thank you for joining AutoDevOps! We're excited to have you on board. You now have access to powerful DevOps tools that will help you:
+                Thank you for joining DeployDojo! We're excited to have you on board. You now have access to powerful DevOps tools that will help you:
               </p>
               <ul style="margin: 20px 0; padding-left: 20px; color: #555;">
                 <li style="margin-bottom: 10px;">🚀 Deploy applications with one click</li>
@@ -90,7 +90,7 @@ const sendWelcomeEmail = async (email, username) => {
                 Need help? Contact us at <a href="mailto:support@cmcloud.online" style="color: #667eea; text-decoration: none;">support@cmcloud.online</a>
               </p>
               <p style="color: #888; font-size: 13px; margin: 15px 0 0;">
-                © 2026 AutoDevOps. All rights reserved.
+                © 2026 DeployDojo. All rights reserved.
               </p>
             </div>
           </div>
@@ -119,7 +119,7 @@ const sendOTPEmail = async (email, username, otp) => {
     const mailOptions = {
       from: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
       to: email,
-      subject: 'Verify Your Email - AutoDevOps OTP',
+      subject: 'Verify Your Email - DeployDojo OTP',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
           <div style="background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.1);">
@@ -136,7 +136,7 @@ const sendOTPEmail = async (email, username, otp) => {
                 Hello <strong>${username}</strong>,
               </p>
               <p style="margin: 15px 0 0; color: #555; font-size: 15px; line-height: 1.6;">
-                Thank you for registering with AutoDevOps! To complete your registration, please use the following One-Time Password (OTP):
+                Thank you for registering with DeployDojo! To complete your registration, please use the following One-Time Password (OTP):
               </p>
             </div>
             
@@ -154,10 +154,10 @@ const sendOTPEmail = async (email, username, otp) => {
             
             <div style="text-align: center; margin-top: 35px; padding-top: 25px; border-top: 1px solid #eee;">
               <p style="color: #888; font-size: 14px; margin: 0;">
-                If you didn't create an account with AutoDevOps, please ignore this email.
+                If you didn't create an account with DeployDojo, please ignore this email.
               </p>
               <p style="color: #888; font-size: 13px; margin: 15px 0 0;">
-                © 2026 AutoDevOps. All rights reserved.
+                © 2026 DeployDojo. All rights reserved.
               </p>
             </div>
           </div>
@@ -179,7 +179,7 @@ const sendVerificationEmail = async (email, username, token) => {
     const mailOptions = {
       from: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
       to: email,
-      subject: 'Verify Your Email - AutoDevOps',
+      subject: 'Verify Your Email - DeployDojo',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
           <div style="background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.1);">
@@ -196,7 +196,7 @@ const sendVerificationEmail = async (email, username, token) => {
                 Hello <strong>${username}</strong>,
               </p>
               <p style="margin: 15px 0 0; color: #555; font-size: 15px; line-height: 1.6;">
-                Thank you for registering with AutoDevOps! To complete your registration and ensure the security of your account, please verify your email address by clicking the button below.
+                Thank you for registering with DeployDojo! To complete your registration and ensure the security of your account, please verify your email address by clicking the button below.
               </p>
               <p style="margin: 15px 0 0; color: #555; font-size: 15px; line-height: 1.6;">
                 This verification confirms that your email address is valid and working, preventing fake registrations.
@@ -222,10 +222,10 @@ const sendVerificationEmail = async (email, username, token) => {
             
             <div style="text-align: center; margin-top: 35px; padding-top: 25px; border-top: 1px solid #eee;">
               <p style="color: #888; font-size: 14px; margin: 0;">
-                If you didn't create an account with AutoDevOps, please ignore this email.
+                If you didn't create an account with DeployDojo, please ignore this email.
               </p>
               <p style="color: #888; font-size: 13px; margin: 15px 0 0;">
-                © 2026 AutoDevOps. All rights reserved.
+                © 2026 DeployDojo. All rights reserved.
               </p>
             </div>
           </div>
@@ -683,7 +683,7 @@ const forgotPassword = async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
       to: email,
-      subject: 'Reset Your Password - AutoDevOps',
+      subject: 'Reset Your Password - DeployDojo',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
           <div style="background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.1);">
@@ -700,7 +700,7 @@ const forgotPassword = async (req, res) => {
                 Hello <strong>${user.username}</strong>,
               </p>
               <p style="margin: 15px 0 0; color: #555; font-size: 15px; line-height: 1.6;">
-                We received a request to reset your password for your AutoDevOps account. Click the button below to set a new password.
+                We received a request to reset your password for your DeployDojo account. Click the button below to set a new password.
               </p>
               <p style="margin: 15px 0 0; color: #555; font-size: 15px; line-height: 1.6;">
                 This link will expire in 1 hour for your security.
@@ -729,7 +729,7 @@ const forgotPassword = async (req, res) => {
                 For your security, this link can only be used once.
               </p>
               <p style="color: #888; font-size: 13px; margin: 15px 0 0;">
-                © 2026 AutoDevOps. All rights reserved.
+                © 2026 DeployDojo. All rights reserved.
               </p>
             </div>
           </div>

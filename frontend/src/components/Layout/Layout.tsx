@@ -5,7 +5,6 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
 import {
-  GitBranch,
   History,
   LogOut,
   Menu,
@@ -41,6 +40,7 @@ import {
   Receipt,
   GraduationCap,
 } from 'lucide-react'
+import Logo from '../UI/Logo'
 
 const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -302,12 +302,7 @@ const Layout: React.FC = () => {
         <div className="fixed inset-0 bg-secondary-900/80" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-secondary-800 shadow-xl">
           <div className="flex items-center justify-between p-4 border-b border-secondary-200 dark:border-secondary-700">
-            <div className="flex items-center">
-              <GitBranch className="w-8 h-8 text-primary-600" />
-              <span className="ml-2 text-xl font-bold text-secondary-900 dark:text-secondary-100">
-                DevOps Gen
-              </span>
-            </div>
+            <Logo size={34} />
             <button
               onClick={() => setSidebarOpen(false)}
               className="p-1 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700"
@@ -404,10 +399,7 @@ const Layout: React.FC = () => {
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:block">
         <div className="h-full bg-white dark:bg-ink-900/90 dark:backdrop-blur-xl border-r border-secondary-200 dark:border-white/10">
           <div className="flex items-center p-6 border-b border-secondary-200 dark:border-secondary-700">
-            <GitBranch className="w-8 h-8 text-primary-600" />
-            <span className="ml-2 text-xl font-bold text-secondary-900 dark:text-secondary-100">
-              AutoDevOps       
-            </span>
+            <Logo size={38} />
           </div>
           <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-200px)]">
             {visibleNav.map((item) => {

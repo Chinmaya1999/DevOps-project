@@ -23,7 +23,7 @@ async function ensureInvoiceNumber(paymentId) {
 }
 
 const seller = () => ({
-  name: process.env.INVOICE_SELLER_NAME || 'AutoDevOps',
+  name: process.env.INVOICE_SELLER_NAME || 'DeployDojo',
   address: process.env.INVOICE_SELLER_ADDRESS || '',
   taxId: process.env.INVOICE_TAX_ID || '',
   email: process.env.INVOICE_SELLER_EMAIL || '',
@@ -40,7 +40,7 @@ function buildInvoice(payment, user) {
     seller: seller(),
     customer: { name: user.username, email: user.email },
     items: [{
-      description: `AutoDevOps Pro — ${label} plan (${days} days)`,
+      description: `DeployDojo Pro — ${label} plan (${days} days)`,
       periodStart: payment.periodStart || null,
       periodEnd: payment.periodEnd || null,
       amount: payment.amount,

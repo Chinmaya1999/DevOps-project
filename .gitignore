@@ -8,3 +8,8 @@ build/
 coverage/
 *.log
 backend/uploads/payments/
+
+# private keys
+*.pem
+*.key
+id_rsa*
