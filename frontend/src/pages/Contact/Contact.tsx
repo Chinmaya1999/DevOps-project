@@ -1,3 +1,4 @@
+import { API_BASE } from '../../services/api'
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Header from '../../components/Header/Header'
@@ -18,7 +19,7 @@ const Contact: React.FC = () => {
     setIsSubmitting(true)
     
     try {
-      const response = await fetch('https://api.cmcloud.online/api/contact', {
+      const response = await fetch(`${API_BASE}/contact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

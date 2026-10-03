@@ -42,6 +42,22 @@ server {
     listen [::]:80;
     server_name ${APP_HOST};
     client_max_body_size 5m;
+
+    # Same-origin API: the browser talks to the SAME address as the site, so it needs no separate DNS name
+    # (and a stale DNS cache for api.* can never break sign-in). Also WebSockets for chat.
+    location ~ ^/(api|socket\.io|uploads)/ {
+        proxy_pass http://127.0.0.1:5001;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \$connection_upgrade;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+    }
+
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;

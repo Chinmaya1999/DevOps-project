@@ -95,9 +95,9 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     // Initialize socket connection - use base URL without /api for Socket.IO
-    const socketBaseUrl = import.meta.env.VITE_API_URL 
-      ? import.meta.env.VITE_API_URL.replace('/api', '') 
-      : 'https://api.cmcloud.online'
+    // absolute VITE_API_URL (local dev) -> that server; otherwise the same origin as the site
+    const apiUrl = import.meta.env.VITE_API_URL
+    const socketBaseUrl = apiUrl && /^https?:/.test(apiUrl) ? apiUrl.replace(/\/api\/?$/, '') : window.location.origin
     const newSocket = io(socketBaseUrl, {
       // the HttpOnly session cookie authenticates the socket; the server also checks the Origin header
       withCredentials: true,

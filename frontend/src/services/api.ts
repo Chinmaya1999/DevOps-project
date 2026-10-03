@@ -1,7 +1,9 @@
 import axios from 'axios'
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api',
+  // Relative by default: the API is served from the same address as the site (see deploy/server-setup.sh),
+  // so it needs no separate DNS name and cookies stay first-party. Local dev sets VITE_API_URL (frontend/.env.development).
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 600000,
   withCredentials: true,
   headers: {
@@ -15,7 +17,7 @@ export const api = axios.create({
  */
 let csrfToken: string | null = null
 export const setCsrfToken = (t: string | null) => { csrfToken = t }
-export const API_BASE: string = import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'
+export const API_BASE: string = import.meta.env.VITE_API_URL || '/api'
 
 /** fetch() with the session cookie + CSRF header, for the few places that don't use axios. */
 export const authFetch = (url: string, init: RequestInit = {}) =>
