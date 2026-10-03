@@ -39,6 +39,7 @@ import {
   DollarSign,
   LifeBuoy,
   Receipt,
+  GraduationCap,
 } from 'lucide-react'
 
 const Layout: React.FC = () => {
@@ -256,6 +257,7 @@ const Layout: React.FC = () => {
     { name: 'Terraform IaC', href: '/generator/terraform', icon: Package },
     { name: 'Dockerfile', href: '/generator/dockerfile', icon: Container },
     { name: 'DevOps Documentation', href: '/devops-docs', icon: BookOpen },
+    { name: 'Learn DevOps', href: '/learn', icon: GraduationCap },
     { name: 'Help Desk', href: '/help', icon: LifeBuoy },
     { name: 'DevOps Toolbox', href: '/toolbox', icon: Terminal },
     { name: 'Validator', href: '/validator', icon: CheckCircle },

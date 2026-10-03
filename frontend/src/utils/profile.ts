@@ -20,7 +20,7 @@ export interface Recommendation { title: string; text: string; to: string; pro?:
 export function recommendationsFor(experience: string | undefined, domains: string[] = []): Recommendation[] {
   const out: Recommendation[] = []
   if (isBeginner(experience)) {
-    out.push({ title: 'Follow the DevOps roadmap', text: 'A step-by-step path from Linux basics to Kubernetes and CI/CD.', to: '/roadmap' })
+    out.push({ title: 'Start the learning path', text: 'Step-by-step guides that deploy real websites, and a 12-stage roadmap from zero to DevOps engineer.', to: '/learn' })
     out.push({ title: 'Generate your first Dockerfile', text: 'See a production-grade example and read why each line is there.', to: '/generator/dockerfile' })
     out.push({ title: 'Stuck on an error?', text: 'Answer two questions and get a plain-language fix.', to: '/help' })
   } else if (isSenior(experience)) {

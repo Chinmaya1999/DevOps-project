@@ -11,6 +11,7 @@ interface HeaderProps {
 // Only routes that exist for signed-out visitors (see App.tsx)
 const navigation = [
   { name: 'Features', href: '/features' },
+  { name: 'Learn', href: '/learn' },
   { name: 'Pricing', href: '/pricing' },
   { name: 'About', href: '/about' },
   { name: 'Contact', href: '/contact' },

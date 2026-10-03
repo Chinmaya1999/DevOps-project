@@ -403,3 +403,36 @@ guard('refund webhook (signed) updates a pending refund; unsigned is rejected', 
   assert.strictEqual((await call('/api/payment/cashfree/webhook', { method: 'POST', body: raw, headers: sign(raw) })).status, 200);
   assert.strictEqual((await Payment.findById(p._id)).refund.status, 'refunded');
 });
+
+guard('live Cashfree keys cannot start a payment from localhost (clear error, gateway never called)', async () => {
+  const { token } = await makeUser('local_live');
+  const created = gateway.created.length;
+  process.env.CASHFREE_ENV = 'production';
+  try {
+    const r = await call('/api/payment/cashfree/order', { token, method: 'POST', headers: { Origin: 'http://localhost:3000' }, body: { subscriptionType: 'monthly', phone: '9876543210' } });
+    assert.strictEqual(r.status, 400);
+    assert.match(r.json.error, /sandbox/i);
+    assert.strictEqual(gateway.created.length, created, 'no order may be created at the gateway');
+    // a real, whitelisted site is unaffected
+    const ok = await call('/api/payment/cashfree/order', { token, method: 'POST', headers: { Origin: 'https://cmcloud.online' }, body: { subscriptionType: 'monthly', phone: '9876543210' } });
+    assert.strictEqual(ok.status, 200);
+    assert.strictEqual(ok.json.data.environment, 'production');
+  } finally { process.env.CASHFREE_ENV = 'sandbox'; }
+  // sandbox from localhost is exactly what local development should do
+  const sb = await call('/api/payment/cashfree/order', { token, method: 'POST', headers: { Origin: 'http://localhost:3000' }, body: { subscriptionType: 'monthly', phone: '9876543210' } });
+  assert.strictEqual(sb.status, 200);
+  assert.strictEqual(sb.json.data.environment, 'sandbox');
+});
+
+test('sandbox and live credentials are selected by CASHFREE_ENV', () => {
+  const keep = { ...process.env };
+  Object.assign(process.env, { CASHFREE_APP_ID: 'live_id', CASHFREE_SECRET_KEY: 'live_secret', CASHFREE_SANDBOX_APP_ID: 'test_id', CASHFREE_SANDBOX_SECRET_KEY: 'test_secret' });
+  try {
+    process.env.CASHFREE_ENV = 'production';
+    assert.deepStrictEqual(cashfree.credentials(), { id: 'live_id', secret: 'live_secret' });
+    process.env.CASHFREE_ENV = 'sandbox';
+    assert.deepStrictEqual(cashfree.credentials(), { id: 'test_id', secret: 'test_secret' });
+    delete process.env.CASHFREE_SANDBOX_APP_ID; delete process.env.CASHFREE_SANDBOX_SECRET_KEY;
+    assert.deepStrictEqual(cashfree.credentials(), { id: 'live_id', secret: 'live_secret' }, 'falls back to the generic keys');
+  } finally { Object.assign(process.env, keep); }
+});

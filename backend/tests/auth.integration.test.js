@@ -119,6 +119,8 @@ guard('OTP: wrong codes are limited, the right code verifies, then login returns
   assert.ok(sessionFrom(login), 'session cookie must be set');
   assert.strictEqual(login.json.user.plan.plan, 'free');
   assert.ok(!('password' in login.json.user));
+  assert.strictEqual(login.json.user.workExperience, '3-5 years', 'login returns what personalisation needs');
+  assert.deepStrictEqual(login.json.user.domains, ['Docker']);
 });
 
 guard('verify-otp does not reveal whether an email exists and ignores operator injection', async () => {

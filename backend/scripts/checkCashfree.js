@@ -9,18 +9,22 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const axios = require('axios');
 
-const env = process.env.CASHFREE_ENV === 'sandbox' ? 'sandbox' : 'production';
+const cashfree = require('../services/cashfreeService');
+const env = cashfree.environment();
 const base = env === 'sandbox' ? 'https://sandbox.cashfree.com' : 'https://api.cashfree.com';
+const { id: APP_ID, secret: SECRET } = cashfree.credentials();
 
 (async () => {
-  if (!process.env.CASHFREE_APP_ID || !process.env.CASHFREE_SECRET_KEY) {
-    console.error('CASHFREE_APP_ID / CASHFREE_SECRET_KEY missing in backend/.env');
+  if (!APP_ID || !SECRET) {
+    console.error(env === 'sandbox'
+      ? 'Sandbox keys missing: set CASHFREE_SANDBOX_APP_ID / CASHFREE_SANDBOX_SECRET_KEY in backend/.env'
+      : 'CASHFREE_APP_ID / CASHFREE_SECRET_KEY missing in backend/.env');
     process.exit(1);
   }
-  console.log(`Environment: ${env}  |  App ID: ${process.env.CASHFREE_APP_ID.slice(0, 4)}…  |  Secret: ${process.env.CASHFREE_SECRET_KEY.slice(0, 12)}…`);
+  console.log(`Environment: ${env}  |  App ID: ${APP_ID.slice(0, 4)}…  |  Secret: ${SECRET.slice(0, 12)}…`);
   try {
     await axios.get(`${base}/pg/orders/credential_check_${Date.now()}`, {
-      headers: { 'x-client-id': process.env.CASHFREE_APP_ID, 'x-client-secret': process.env.CASHFREE_SECRET_KEY, 'x-api-version': '2023-08-01' },
+      headers: { 'x-client-id': APP_ID, 'x-client-secret': SECRET, 'x-api-version': '2023-08-01' },
       timeout: 15000,
     });
   } catch (e) {

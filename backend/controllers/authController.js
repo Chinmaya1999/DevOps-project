@@ -371,7 +371,9 @@ const login = async (req, res) => {
         lastLogin: user.lastLogin,
         subscription: user.subscription,
         plan: getEffectivePlan(user),
-        twoFactorEnabled: false
+        twoFactorEnabled: false,
+        workExperience: user.workExperience,
+        domains: user.domains
       },
       csrfToken
     });

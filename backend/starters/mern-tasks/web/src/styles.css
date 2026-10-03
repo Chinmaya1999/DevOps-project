@@ -1,0 +1,13 @@
+body { margin: 0; font-family: system-ui, sans-serif; background: #f1f5f9; color: #0f172a; }
+.app { max-width: 520px; margin: 3rem auto; background: #fff; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+h1 { margin: 0; }
+.sub { color: #64748b; }
+form { display: flex; gap: .5rem; margin: 1rem 0; }
+input { flex: 1; padding: .6rem .8rem; border: 1px solid #cbd5e1; border-radius: .5rem; font-size: 1rem; }
+button { padding: .6rem 1rem; border: 0; border-radius: .5rem; background: #2563eb; color: #fff; font-weight: 600; cursor: pointer; }
+ul { list-style: none; padding: 0; }
+li { display: flex; justify-content: space-between; align-items: center; padding: .6rem 0; border-bottom: 1px solid #e2e8f0; }
+li span { cursor: pointer; }
+li.done span { text-decoration: line-through; color: #94a3b8; }
+button.x { background: transparent; color: #ef4444; padding: .2rem .5rem; }
+.error { color: #dc2626; }

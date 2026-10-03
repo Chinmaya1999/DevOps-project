@@ -431,6 +431,15 @@ router.post('/cashfree/order', auth, limiters.checkout, async (req, res) => {
     if (!cashfree.isConfigured()) {
       return res.status(503).json({ success: false, error: 'Online payments are temporarily unavailable' });
     }
+    // Live Cashfree keys only work from a whitelisted domain; localhost can never be whitelisted.
+    // Say so clearly instead of sending the user to Cashfree's "Broken Link" page.
+    const origin = req.get('origin') || '';
+    if (cashfree.environment() === 'production' && /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(origin)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Live payments cannot be started from localhost. For local testing set CASHFREE_ENV=sandbox with your Cashfree test keys.',
+      });
+    }
     const { subscriptionType, phone } = req.body || {};
     if (!['monthly', 'yearly'].includes(subscriptionType)) {
       return res.status(400).json({ success: false, error: 'Invalid subscription type' });
@@ -478,7 +487,7 @@ router.post('/cashfree/order', auth, limiters.checkout, async (req, res) => {
 
     res.json({
       success: true,
-      data: { orderId, paymentSessionId: order.payment_session_id, environment: process.env.CASHFREE_ENV === 'sandbox' ? 'sandbox' : 'production' },
+      data: { orderId, paymentSessionId: order.payment_session_id, environment: cashfree.environment() },
     });
   } catch (error) {
     console.error('Create order error:', error.message);

@@ -1,8 +1,12 @@
 # AutoDevOps (InfraPilot)
 
-Generate, validate and deploy production-grade DevOps configuration: Terraform, Kubernetes, Docker, Jenkins,
-GitHub Actions, GitLab CI, Azure DevOps, Ansible, monitoring, SSL, Bash and Python. Includes a full-stack ZIP bundle,
-AWS one-click deployment, AWS cost analysis, a community chat/blog and an admin panel.
+A DevOps learning platform and toolbox.
+
+- **Learn:** a 12-stage roadmap from zero to DevOps engineer and 9 step-by-step deployment guides (static site, Node.js, MERN, domain + HTTPS, CI/CD) with tested starter projects. Guides are Markdown files in `frontend/src/content/learn/guides/`; starters are in `backend/starters/`.
+- **Generate and check:** 8 generators (Dockerfile, Kubernetes, Terraform, Jenkins, GitHub Actions, Ansible, Bash, Python), a validator and a secret scanner.
+- **Fix:** a Help desk and an error troubleshooter (29 common production errors).
+- **Ship (Pro):** a full-stack ZIP bundle, AWS one-click deployment and AWS cost analysis.
+- Community chat and blogs, an admin panel, and Cashfree billing.
 
 **Stack:** React 18 + Vite + Tailwind + Three.js (frontend) · Node/Express + MongoDB + Socket.io (backend)
 
@@ -43,10 +47,23 @@ The page works without them.
 
 ## Payments (Cashfree)
 
-1. Put `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `CASHFREE_ENV`, `FRONTEND_URL`, `API_PUBLIC_URL` in `backend/.env` (and your `ENV_FILE` deploy secret).
-2. Verify the keys without charging anything: `cd backend && node scripts/checkCashfree.js`
-3. Plans/prices live in `backend/services/plans.js` (Free: 10 generations/month; Pro: unlimited + bundle, deployments, cost analysis, Vision).
-4. In the Cashfree dashboard, whitelist your server IP and approve your website domain for production checkout.
+Plans/prices live in `backend/services/plans.js` (Free: 10 generations/month; Pro: unlimited + bundle, deployments, cost analysis, Vision).
+
+**Local development — use Cashfree sandbox (test mode).** Live keys only work from a domain you have whitelisted; `localhost` can never be whitelisted (Cashfree shows "Broken Link").
+1. Cashfree dashboard → switch to **Test mode** → Developers → API Keys → create test keys.
+2. In `backend/.env`:
+   ```
+   CASHFREE_ENV=sandbox
+   CASHFREE_SANDBOX_APP_ID=...
+   CASHFREE_SANDBOX_SECRET_KEY=...
+   FRONTEND_URL=http://localhost:3000     # where Cashfree sends the customer back
+   ```
+3. `cd backend && node scripts/checkCashfree.js` should print `OK`. Pay with Cashfree's sandbox test cards/UPI (see their docs). No webhook is needed locally: the return page confirms the payment with Cashfree itself.
+
+**Production**
+1. Keep the live keys in `CASHFREE_APP_ID` / `CASHFREE_SECRET_KEY` with `CASHFREE_ENV=production`, `FRONTEND_URL=https://cmcloud.online`, `API_PUBLIC_URL=https://api.cmcloud.online`.
+2. In the Cashfree merchant dashboard → Developers → **Whitelisting**: request approval for `https://cmcloud.online` (and `www.` if used) and whitelist your server's IP.
+3. Test with one real small payment, then refund it from Admin → Payment Verification.
 
 ## Accounts, billing and security features
 

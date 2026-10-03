@@ -1,0 +1,26 @@
+# Deploys to your server every time you push to the main branch.
+# One-time setup: add three repository secrets (Settings -> Secrets and variables -> Actions):
+#   SSH_HOST  = your server's public IP address
+#   SSH_USER  = ubuntu
+#   SSH_KEY   = the FULL contents of your private key file (.pem), including the BEGIN/END lines
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" "cd /var/www/mysite && git pull --ff-only origin main"

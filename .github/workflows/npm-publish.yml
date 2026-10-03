@@ -29,8 +29,11 @@ jobs:
       - name: Frontend typecheck and build
         working-directory: frontend
         run: npm ci --legacy-peer-deps && npm run build
+      - name: Validate learning guides (valid YAML/Nginx/Dockerfile blocks, no broken links)
+        working-directory: frontend
+        run: npm run check:content
       - name: Scan repo for vulnerabilities and committed secrets
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scanners: vuln,secret
@@ -100,91 +103,92 @@ jobs:
           cache-from: type=registry,ref=awsmallick1999/infrapilot-frontend:buildcache
           cache-to: type=registry,ref=awsmallick1999/infrapilot-frontend:buildcache,mode=max
 
-  # Deploy to AWS EC2
+  # Deploy to AWS EC2: pull, start, health-check, and roll back automatically if the new version is unhealthy
   deploy:
     needs: [build-backend, build-frontend]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Prepare environment payload
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          DATA_ENCRYPTION_KEY: ${{ secrets.DATA_ENCRYPTION_KEY }}
+        run: |
+          # Required secrets must exist, otherwise the backend refuses to start in production
+          [ ${#JWT_SECRET} -ge 32 ] || { echo "::error::Repository secret JWT_SECRET is missing or shorter than 32 characters"; exit 1; }
+          [[ "$DATA_ENCRYPTION_KEY" =~ ^[0-9a-fA-F]{64}$ ]] || { echo "::error::Repository secret DATA_ENCRYPTION_KEY must be 64 hex characters"; exit 1; }
+          {
+            printf '%s\n' "$ENV_FILE" | grep -vE '^(JWT_SECRET|DATA_ENCRYPTION_KEY|NODE_ENV|TRUST_PROXY)='
+            echo "JWT_SECRET=$JWT_SECRET"
+            echo "DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY"
+            echo "NODE_ENV=production"
+            echo "TRUST_PROXY=1"
+          } > env.prod
+          B64=$(base64 -w0 env.prod)
+          echo "::add-mask::$B64"
+          echo "ENV_B64=$B64" >> "$GITHUB_ENV"
+          rm env.prod
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          ENV_B64: ${{ env.ENV_B64 }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
+          envs: ENV_B64
+          script_stop: true
           script: |
-            # Use ec2-user's home directory instead of root
-            PROJECT_DIR="/home/ec2-user/DevOps-project"
-            
-            # Check if project exists, if not clone it
-            if [ ! -d "$PROJECT_DIR" ]; then
-              echo "Project directory not found. Cloning repository..."
-              cd /home/ec2-user
-              git clone https://github.com/Chinmaya1999/DevOps-project.git
+            set -u
+            BACKEND=awsmallick1999/infrapilot-backend
+            FRONTEND=awsmallick1999/infrapilot-frontend
+
+            # 1. Download new images BEFORE touching the running site
+            sudo docker pull $BACKEND:latest
+            sudo docker pull $FRONTEND:latest
+
+            # 2. Write the environment file (kept private to this user)
+            umask 077
+            mkdir -p "$HOME/app-env"
+            printf '%s' "$ENV_B64" | base64 -d > "$HOME/app-env/backend.env"
+
+            # 3. Remember what is running now, so we can roll back
+            PREV_BACKEND=$(sudo docker inspect -f '{{.Image}}' backend 2>/dev/null || true)
+            PREV_FRONTEND=$(sudo docker inspect -f '{{.Image}}' frontend 2>/dev/null || true)
+
+            start_backend() { sudo docker run -d --name backend --restart unless-stopped -p 5001:5001 --env-file "$HOME/app-env/backend.env" "$1"; }
+            start_frontend() { sudo docker run -d --name frontend --restart unless-stopped -p 3000:80 "$1"; }
+
+            # 4. Swap containers
+            sudo docker rm -f backend frontend >/dev/null 2>&1 || true
+            start_backend $BACKEND:latest
+            start_frontend $FRONTEND:latest
+
+            # 5. Wait up to 90 s for the backend health endpoint
+            OK=0
+            for i in $(seq 1 45); do
+              if curl -fsS http://localhost:5001/health >/dev/null 2>&1; then OK=1; break; fi
+              sleep 2
+            done
+
+            if [ "$OK" = "1" ] && curl -fsI http://localhost:3000 >/dev/null 2>&1; then
+              echo "Deploy healthy."
+              sudo docker image prune -f >/dev/null
+              sudo docker ps
+              exit 0
             fi
-            
-            # Navigate to project directory
-            cd $PROJECT_DIR || exit 1
-            
-            # Pull latest changes
-            git pull origin master
-            
-            # Stop and remove old containers
-            sudo docker stop frontend backend || true
-            sudo docker rm frontend backend || true
-            
-            # Pull latest images
-            sudo docker pull awsmallick1999/infrapilot-backend:latest
-            sudo docker pull awsmallick1999/infrapilot-frontend:latest
-            
-            # Create .env file from GitHub secret
-            echo "${{ secrets.ENV_FILE }}" > .env
-            
-            # Start backend container (all secrets come from the .env file)
-            sudo docker run -d \
-              --name backend \
-              -p 5001:5001 \
-              --env-file .env \
-              awsmallick1999/infrapilot-backend:latest
-            
-            # Start frontend container
-            sudo docker run -d \
-              --name frontend \
-              -p 3000:80 \
-              awsmallick1999/infrapilot-frontend:latest
-            
-            # Clean up unused images
-            sudo docker image prune -f
-            
-            # Check container status
+
+            # 6. Unhealthy: show why, then restore the previous version
+            echo "::error::New version is unhealthy. Backend logs:"
+            sudo docker logs --tail 60 backend || true
+            sudo docker rm -f backend frontend >/dev/null 2>&1 || true
+            if [ -n "$PREV_BACKEND" ]; then
+              echo "Rolling back to the previous version..."
+              start_backend "$PREV_BACKEND"
+              [ -n "$PREV_FRONTEND" ] && start_frontend "$PREV_FRONTEND"
+            fi
             sudo docker ps
-
- 
-
-  # Rollback
-  rollback:
-    needs: [deploy]
-    if: failure()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Rollback deployment
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          script: |
-            PROJECT_DIR="/home/ec2-user/DevOps-project"
-            cd $PROJECT_DIR
-            sudo docker stop frontend backend || true
-            sudo docker rm frontend backend || true
-            # Pull previous stable versions if tagged
-            sudo docker pull awsmallick1999/infrapilot-backend:previous || echo "No previous version found"
-            sudo docker pull awsmallick1999/infrapilot-frontend:previous || echo "No previous version found"
-            sudo docker run -d --name backend -p 5001:5001 awsmallick1999/infrapilot-backend:previous || echo "Backend rollback failed"
-            sudo docker run -d --name frontend -p 3000:80 awsmallick1999/infrapilot-frontend:previous || echo "Frontend rollback failed"
+            exit 1

@@ -130,7 +130,8 @@ const verifyLogin = async (req, res) => {
     res.json({
       message: 'Login successful',
       user: { id: user._id, username: user.username, email: user.email, role: user.role, lastLogin: user.lastLogin,
-              subscription: user.subscription, plan: getEffectivePlan(user), twoFactorEnabled: true },
+              subscription: user.subscription, plan: getEffectivePlan(user), twoFactorEnabled: true,
+              workExperience: user.workExperience, domains: user.domains },
       csrfToken,
       recoveryCodesLeft: user.twoFactor.recoveryCodes.length,
     });

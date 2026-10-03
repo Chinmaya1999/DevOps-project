@@ -8,12 +8,27 @@ const axios = require('axios');
  */
 const API_VERSION = '2023-08-01';
 
-const baseUrl = () => (process.env.CASHFREE_ENV === 'sandbox' ? 'https://sandbox.cashfree.com' : 'https://api.cashfree.com');
-const isConfigured = () => Boolean(process.env.CASHFREE_APP_ID && process.env.CASHFREE_SECRET_KEY);
+const environment = () => (process.env.CASHFREE_ENV === 'sandbox' ? 'sandbox' : 'production');
+const baseUrl = () => (environment() === 'sandbox' ? 'https://sandbox.cashfree.com' : 'https://api.cashfree.com');
+
+/**
+ * Live and sandbox (test-mode) keys are different credentials. Keep both in .env and switch with CASHFREE_ENV:
+ *   CASHFREE_APP_ID / CASHFREE_SECRET_KEY                  -> live keys
+ *   CASHFREE_SANDBOX_APP_ID / CASHFREE_SANDBOX_SECRET_KEY  -> test keys (used when CASHFREE_ENV=sandbox)
+ */
+const credentials = () =>
+  environment() === 'sandbox'
+    ? {
+        id: process.env.CASHFREE_SANDBOX_APP_ID || process.env.CASHFREE_APP_ID,
+        secret: process.env.CASHFREE_SANDBOX_SECRET_KEY || process.env.CASHFREE_SECRET_KEY,
+      }
+    : { id: process.env.CASHFREE_APP_ID, secret: process.env.CASHFREE_SECRET_KEY };
+
+const isConfigured = () => Boolean(credentials().id && credentials().secret);
 
 const headers = () => ({
-  'x-client-id': process.env.CASHFREE_APP_ID,
-  'x-client-secret': process.env.CASHFREE_SECRET_KEY,
+  'x-client-id': credentials().id,
+  'x-client-secret': credentials().secret,
   'x-api-version': API_VERSION,
   'Content-Type': 'application/json',
 });
@@ -22,6 +37,8 @@ const service = {
   http: axios, // replaced in tests
 
   isConfigured,
+  environment,
+  credentials,
 
   async createOrder({ orderId, amount, customer, returnUrl, notifyUrl }) {
     if (!isConfigured()) throw new Error('Payment gateway is not configured');
@@ -69,7 +86,7 @@ const service = {
   /** Webhook signature = base64( HMAC-SHA256( secretKey, timestamp + rawBody ) ). Constant-time compare. */
   verifyWebhookSignature(rawBody, signature, timestamp) {
     if (!isConfigured() || !rawBody || !signature || !timestamp) return false;
-    const expected = crypto.createHmac('sha256', process.env.CASHFREE_SECRET_KEY)
+    const expected = crypto.createHmac('sha256', credentials().secret)
       .update(String(timestamp) + rawBody.toString('utf8'))
       .digest('base64');
     const a = Buffer.from(expected);

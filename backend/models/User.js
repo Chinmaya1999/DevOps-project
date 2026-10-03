@@ -87,6 +87,11 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: {
     type: Date
   },
+  // Ids of guide steps / curriculum items the learner has ticked off
+  learningProgress: {
+    type: [String],
+    default: []
+  },
   // Two-factor authentication (TOTP). Secrets are encrypted at rest; recovery codes are stored as SHA-256 hashes.
   twoFactor: {
     enabled: { type: Boolean, default: false },

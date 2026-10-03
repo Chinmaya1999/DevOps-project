@@ -28,6 +28,7 @@ const chatRoutes = require('./routes/chat');
 const blogRoutes = require('./routes/blog');
 const costAnalysisRoutes = require('./routes/costAnalysis');
 const toolsRoutes = require('./routes/tools');
+const learnRoutes = require('./routes/learn');
 const { auth } = require('./middleware/auth');
 const { requireFeature } = require('./middleware/subscription');
 const { initializeSocket } = require('./socket');
@@ -174,6 +175,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/cost-analysis', auth, requireFeature('costAnalysis'), costAnalysisRoutes);
 app.use('/api/tools', toolsRoutes);
+app.use('/api/learn', learnRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

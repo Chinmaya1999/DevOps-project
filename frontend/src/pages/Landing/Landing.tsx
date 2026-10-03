@@ -1,37 +1,42 @@
 import React, { Suspense, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  GitBranch, Zap, Shield, Cloud, ArrowRight, Code, Users, Rocket, Cpu,
+  GitBranch, Zap, Shield, ArrowRight, Users, Rocket, Cpu,
   Send, Container, Boxes, Terminal, Activity, Lock, CheckCircle,
+  GraduationCap, Download, BookOpen, LifeBuoy, Globe, Clock, Server,
 } from 'lucide-react'
 import Header from '../../components/Header/Header'
 import { Reveal, CountUp } from '../../components/Motion/Reveal'
 import TerminalDemo from '../../components/Motion/TerminalDemo'
 import DeployFlowStatic from '../../components/Motion/DeployFlowStatic'
 import api from '../../services/api'
+import { STAGES } from '../../content/learn/curriculum'
+import { API_BASE } from '../../services/api'
 import { useTheme } from '../../context/ThemeContext'
 
 const DeployFlowScene = React.lazy(() => import('../../components/Three/DeployFlowScene'))
 
 const generators = [
-  'Terraform', 'Kubernetes', 'Docker', 'Jenkins', 'GitHub Actions', 'GitLab CI',
-  'Azure DevOps', 'Ansible', 'Monitoring', 'SSL / TLS', 'Bash', 'Python',
+  'Terraform', 'Kubernetes', 'Docker', 'Jenkins', 'GitHub Actions', 'Ansible', 'Bash', 'Python',
+  'Nginx', 'Linux', 'Git', 'AWS',
 ]
 
 const features = [
-  { icon: Zap, title: 'One-click deployment', text: 'Push a Docker stack to your own AWS server with generated compose files, nginx and SSL — no manual wiring.' },
-  { icon: Cloud, title: 'Terraform templates', text: 'Production-ready modules for AWS, Azure, GCP and Kubernetes. Start from a template, not a blank file.' },
-  { icon: GitBranch, title: 'CI/CD in seconds', text: 'Jenkins, GitHub Actions, GitLab CI and Azure DevOps pipelines with build, test, scan and deploy stages.' },
-  { icon: Shield, title: 'Validate before you ship', text: 'Paste any config and catch mistakes and insecure defaults before they reach production.' },
-  { icon: Activity, title: 'Cloud cost analysis', text: 'Connect AWS Cost Explorer and see where the money goes, by service and over time.' },
-  { icon: Users, title: 'DevOps community', text: 'Realtime chat, blogs and a library of real production errors with fixes, written by engineers.' },
+  { icon: GraduationCap, tag: 'Free', title: 'Learn DevOps from zero', text: 'A 12-stage roadmap for college students and freshers, plus step-by-step guides that deploy real websites. Every risky step shows the expected output and the fix for common errors.' },
+  { icon: Terminal, tag: 'Free · 10/month', title: '8 config generators', text: 'Create Dockerfiles, Kubernetes manifests, Terraform, Jenkinsfiles, GitHub Actions workflows, Ansible playbooks, Bash and Python scripts from a short form. Read the output to learn how experts write it.' },
+  { icon: Shield, tag: 'Free', title: 'Validator and secret scanner', text: 'Paste a config to catch mistakes and insecure defaults before you deploy. Scan code and .env files for leaked passwords, keys and tokens. Nothing you paste is stored.' },
+  { icon: LifeBuoy, tag: 'Free', title: 'Help desk and error troubleshooter', text: 'Pick your problem (Kubernetes, Docker, Terraform, AWS, Nginx, SSH…) or paste an error, and get the cause plus the exact commands to fix it. 29 common production errors covered.' },
+  { icon: Zap, tag: 'Pro', title: 'Full-stack bundle and one-click deploy', text: 'Download Docker, CI/CD and Kubernetes files for your app as one ZIP, or deploy a Docker stack to your own AWS server and manage it from a dashboard.' },
+  { icon: Activity, tag: 'Pro', title: 'Cloud cost analysis', text: 'Connect AWS Cost Explorer and see where the money goes, by service and over time, so a forgotten server never surprises you.' },
+  { icon: Users, tag: 'Free', title: 'Community, blogs and docs', text: 'Chat with other learners, read and write blog posts, and use the DevOps documentation library.' },
 ]
 
 const steps = [
-  { icon: Terminal, title: 'Describe', text: 'Pick a stack, cloud and options.' },
-  { icon: Code, title: 'Generate', text: 'Get reviewed, best-practice config instantly.' },
-  { icon: Shield, title: 'Validate', text: 'Security and syntax checks run automatically.' },
-  { icon: Rocket, title: 'Deploy', text: 'Ship with one click, track every deployment.' },
+  { icon: GraduationCap, title: 'Learn', text: 'Follow the roadmap and the guides. Download a tested starter project.' },
+  { icon: Terminal, title: 'Generate', text: 'Create the Dockerfile, pipeline or Terraform your project needs.' },
+  { icon: Shield, title: 'Check', text: 'Validate configs and scan for leaked secrets before you deploy.' },
+  { icon: Rocket, title: 'Deploy', text: 'Put it on your own server, with HTTPS and automatic deploys.' },
+  { icon: LifeBuoy, title: 'Fix', text: 'Hit an error? Help desk and troubleshooter show the cause and the fix.' },
 ]
 
 const Landing: React.FC = () => {
@@ -135,9 +140,9 @@ const Landing: React.FC = () => {
       <section className="py-16">
         <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {[
-            { n: 12, s: '', l: 'Config generators' },
-            { n: 3, s: '', l: 'Clouds: AWS · Azure · GCP' },
-            { n: 1, s: '-click', l: 'Deploy to your server' },
+            { n: 8, s: '', l: 'Config generators' },
+            { n: 9, s: '', l: 'Step-by-step guides' },
+            { n: 12, s: '', l: 'Roadmap stages, zero to job-ready' },
             { n: 0, s: '$', l: 'To get started' },
           ].map((x) => (
             <Reveal key={x.l}>
@@ -155,16 +160,21 @@ const Landing: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Reveal className="max-w-2xl">
             <h2 id="features-heading" className="font-display text-4xl md:text-5xl font-bold tracking-tight">
-              One platform for the whole <span className="text-gradient">delivery path</span>
+              What AutoDevOps <span className="text-gradient">does for you</span>
             </h2>
-            <p className="mt-4 text-lg text-slate-600 dark:text-gray-400">From the first Dockerfile to a monitored production deployment.</p>
+            <p className="mt-4 text-lg text-slate-600 dark:text-gray-400">
+              AutoDevOps is a <strong>learning platform and a toolbox</strong> for DevOps. Beginners learn by deploying real projects. Working engineers generate configs, check them, and fix production errors faster.
+            </p>
           </Reveal>
           <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {features.map((f, i) => (
               <Reveal key={f.title} delay={i * 0.06}>
                 <div className="glass-panel glow-border h-full p-7 hover:-translate-y-1 transition-transform duration-300">
-                  <div className="w-12 h-12 rounded-xl hero-gradient flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                    <f.icon className="w-6 h-6 text-white" />
+                  <div className="flex items-start justify-between">
+                    <div className="w-12 h-12 rounded-xl hero-gradient flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                      <f.icon className="w-6 h-6 text-white" />
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${f.tag === 'Pro' ? 'bg-amber-400/90 text-amber-950' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'}`}>{f.tag}</span>
                   </div>
                   <h3 className="mt-5 font-display text-xl font-semibold">{f.title}</h3>
                   <p className="mt-2 text-slate-600 dark:text-gray-400 leading-relaxed">{f.text}</p>
@@ -175,11 +185,85 @@ const Landing: React.FC = () => {
         </div>
       </section>
 
+      {/* DEPLOY ANYTHING, STEP BY STEP */}
+      <section className="py-20" id="guides" aria-labelledby="guides-heading">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Reveal className="max-w-3xl">
+            <h2 id="guides-heading" className="font-display text-4xl md:text-5xl font-bold tracking-tight">
+              Deploy any app, <span className="text-gradient">step by step</span>
+            </h2>
+            <p className="mt-4 text-lg text-slate-600 dark:text-gray-400">
+              Static website, Node.js app or a full MERN stack: each guide takes you from your laptop to a live server using real DevOps tools. Every command is copy-paste ready, every risky step shows <strong>what you should see</strong>, and common errors come with their fix.
+            </p>
+          </Reveal>
+          <div className="mt-10 grid md:grid-cols-3 gap-5">
+            {[
+              { icon: Globe, name: 'Static website', slug: 'deploy-static-website', starter: 'static-site', level: 'Beginner', time: '~1 hour', tools: ['HTML/CSS/JS', 'Nginx', 'Git', 'GitHub Actions'], text: 'Publish a portfolio on your own server with Nginx, then make every git push update it automatically.' },
+              { icon: Server, name: 'Dynamic Node.js app', slug: 'deploy-nodejs-app', starter: 'node-api', level: 'Beginner', time: '~1.5 hours', tools: ['Node.js', 'Docker', 'Compose', 'Nginx'], text: 'Run a backend in a Docker container, put Nginx in front of it, and redeploy on every push.' },
+              { icon: Boxes, name: 'MERN full stack', slug: 'deploy-mern-app', starter: 'mern-tasks', level: 'Intermediate', time: '~2 hours', tools: ['MongoDB', 'Express', 'React', 'Docker Compose'], text: 'Deploy React, an Express API and MongoDB with persistent data, plus a checklist for your own MERN project.' },
+            ].map((g, i) => (
+              <Reveal key={g.slug} delay={i * 0.08}>
+                <div className="glass-panel glow-border h-full p-6 flex flex-col">
+                  <div className="flex items-center justify-between">
+                    <span className="w-11 h-11 rounded-xl hero-gradient flex items-center justify-center shadow-lg shadow-cyan-500/20"><g.icon className="w-5 h-5 text-white" /></span>
+                    <span className="text-xs text-slate-500 dark:text-gray-400 inline-flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {g.time} · {g.level}</span>
+                  </div>
+                  <h3 className="mt-4 font-display text-xl font-semibold">{g.name}</h3>
+                  <p className="mt-2 text-slate-600 dark:text-gray-400 flex-1">{g.text}</p>
+                  <div className="mt-4 flex flex-wrap gap-1.5">{g.tools.map((t) => <span key={t} className="px-2 py-0.5 rounded-md text-xs bg-slate-200/70 dark:bg-white/10">{t}</span>)}</div>
+                  <div className="mt-5 flex gap-2">
+                    <Link to={`/learn/${g.slug}`} className="btn-primary !px-4 !py-2.5 text-sm inline-flex items-center">Read the guide <ArrowRight className="ml-1.5 w-4 h-4" /></Link>
+                    <a href={`${API_BASE}/learn/starter/${g.starter}`} className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-white/15 text-sm font-semibold inline-flex items-center gap-1.5 hover:bg-white dark:hover:bg-white/5"><Download className="w-4 h-4" /> Starter</a>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal className="mt-8">
+            <div className="glass-panel p-5 flex flex-col md:flex-row md:items-center gap-4 justify-between">
+              <p className="text-slate-700 dark:text-gray-300">Also included: preparing your computer, launching an AWS server, a free domain + HTTPS, CI/CD with GitHub Actions explained line by line, and a deployment error cheat sheet.</p>
+              <Link to="/learn" className="shrink-0 font-semibold text-cyan-700 dark:text-cyan-300 hover:underline inline-flex items-center">See all 9 guides <ArrowRight className="ml-1 w-4 h-4" /></Link>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ROADMAP */}
+      <section className="py-20 bg-white/60 dark:bg-ink-900/50 border-y border-slate-200 dark:border-white/5" id="roadmap" aria-labelledby="roadmap-heading">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Reveal className="max-w-3xl">
+            <h2 id="roadmap-heading" className="font-display text-4xl md:text-5xl font-bold tracking-tight">
+              A clear path from <span className="text-gradient">fresher to DevOps engineer</span>
+            </h2>
+            <p className="mt-4 text-lg text-slate-600 dark:text-gray-400">
+              No idea where to start? Sign up and follow 12 stages: what to learn, in what order, how to know you are ready to move on, and a project for each stage. About 6–9 months of part-time study. Progress is saved to your account.
+            </p>
+          </Reveal>
+          <ol className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {STAGES.map((st, i) => (
+              <Reveal key={st.id} delay={(i % 3) * 0.06}>
+                <li className="glass-panel p-5 h-full list-none">
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-gray-400">
+                    <span className="font-mono">Stage {i + 1}</span><span>{st.weeks}</span>
+                  </div>
+                  <h3 className="mt-2 font-display font-semibold leading-snug">{st.title.replace(/^\d+\.\s*/, '')}</h3>
+                  <p className="mt-2 text-sm text-slate-600 dark:text-gray-400">{st.goal}</p>
+                </li>
+              </Reveal>
+            ))}
+          </ol>
+          <Reveal className="mt-8 flex flex-wrap gap-3">
+            <Link to="/register" className="btn-primary inline-flex items-center">Start free <ArrowRight className="ml-2 w-5 h-5" /></Link>
+            <Link to="/learn" className="inline-flex items-center px-6 py-3 rounded-xl font-semibold border border-slate-300 dark:border-white/15 hover:bg-white dark:hover:bg-white/5"><BookOpen className="w-5 h-5 mr-2" /> Preview the roadmap</Link>
+          </Reveal>
+        </div>
+      </section>
+
       {/* LIVE TERMINAL + STEPS */}
       <section className="py-20 bg-white/60 dark:bg-ink-900/50 border-y border-slate-200 dark:border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
           <Reveal>
-            <h2 className="font-display text-4xl font-bold tracking-tight">From idea to deployed in four steps</h2>
+            <h2 className="font-display text-4xl font-bold tracking-tight">How it works: five steps, repeated for every project</h2>
             <ol className="mt-8 space-y-5">
               {steps.map((s, i) => (
                 <li key={s.title} className="flex gap-4">

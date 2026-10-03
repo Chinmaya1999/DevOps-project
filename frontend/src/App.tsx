@@ -12,6 +12,9 @@ const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'))
 const Generator = lazy(() => import('./pages/Generator/Generator'))
 const History = lazy(() => import('./pages/History/History'))
 const Bundle = lazy(() => import('./pages/Bundle/Bundle'))
+const LearnHub = lazy(() => import('./pages/Learn/LearnHub'))
+const GuideView = lazy(() => import('./pages/Learn/GuideView'))
+import PublicPage from './components/Learn/PublicPage'
 const Security = lazy(() => import('./pages/Security/Security'))
 const Billing = lazy(() => import('./pages/Billing/Billing'))
 const Invoice = lazy(() => import('./pages/Billing/Invoice'))
@@ -74,6 +77,8 @@ function App() {
         <Route path="/features" element={<Features />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/about" element={<About />} />
+        <Route path="/learn" element={<PublicPage><LearnHub /></PublicPage>} />
+        <Route path="/learn/:slug" element={<PublicPage><GuideView /></PublicPage>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       </Suspense>
@@ -93,6 +98,8 @@ function App() {
         <Route path="roadmap" element={<Roadmap />} />
         <Route path="resources/:type/:id" element={<ResourceDetail />} />
         <Route path="admin" element={<Admin />} />
+        <Route path="learn" element={<LearnHub />} />
+        <Route path="learn/:slug" element={<GuideView />} />
         <Route path="help" element={<Help />} />
         <Route path="security" element={<Security />} />
         <Route path="billing" element={<Billing />} />

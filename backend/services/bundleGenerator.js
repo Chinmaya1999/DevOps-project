@@ -121,7 +121,7 @@ ${steps}
             ${dockerHubUser}/${appName}:latest
             ${dockerHubUser}/${appName}:\${{ github.sha }}
       - name: Scan image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${dockerHubUser}/${appName}:\${{ github.sha }}
           severity: CRITICAL,HIGH
