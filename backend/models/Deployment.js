@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { encrypt, decrypt } = require('../utils/crypto');
 
 const deploymentSchema = new mongoose.Schema({
   userId: {
@@ -36,9 +37,12 @@ const deploymentSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  // SSH private key — encrypted at rest (AES-256-GCM), transparently decrypted when read in code
   pemKey: {
     type: String,
-    default: null
+    default: null,
+    set: encrypt,
+    get: decrypt
   },
   domain: {
     type: String,
@@ -116,5 +120,15 @@ deploymentSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
 });
+
+// Never leak secrets through API responses
+deploymentSchema.set('toJSON', {
+  getters: false,
+  transform: (doc, ret) => {
+    delete ret.pemKey;
+    return ret;
+  }
+});
+deploymentSchema.set('toObject', { getters: true });
 
 module.exports = mongoose.model('Deployment', deploymentSchema);

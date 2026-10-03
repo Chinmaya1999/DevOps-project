@@ -4,6 +4,12 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const User = require('../models/User');
 const { registerSchema, loginSchema } = require('../utils/validators');
+const { sha256, secureOTP, safeEqual } = require('../utils/crypto');
+const { passwordProblem } = require('../middleware/security');
+
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCK_MINUTES = 15;
+const MAX_OTP_ATTEMPTS = 5;
 
 // Configure email transporter
 const transporter = nodemailer.createTransport({
@@ -91,7 +97,6 @@ const sendWelcomeEmail = async (email, username) => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`Welcome email sent to ${email}`);
   } catch (error) {
     console.error('Error sending welcome email:', error);
     // Don't throw error to prevent registration from failing
@@ -99,7 +104,7 @@ const sendWelcomeEmail = async (email, username) => {
 };
 
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '1d', algorithm: 'HS256' });
 };
 
 // Generate email verification token
@@ -108,9 +113,7 @@ const generateVerificationToken = () => {
 };
 
 // Generate 6-digit OTP
-const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
+const generateOTP = () => secureOTP();
 
 // Send OTP email
 const sendOTPEmail = async (email, username, otp) => {
@@ -165,7 +168,6 @@ const sendOTPEmail = async (email, username, otp) => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`OTP email sent to ${email}`);
   } catch (error) {
     console.error('Error sending OTP email:', error);
     throw error;
@@ -234,7 +236,6 @@ const sendVerificationEmail = async (email, username, token) => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`Verification email sent to ${email}`);
   } catch (error) {
     console.error('Error sending verification email:', error);
     throw error;
@@ -278,7 +279,7 @@ const register = async (req, res) => {
       domains: domains || [],
       role: 'user', // Explicitly set to user to prevent admin registration
       isEmailVerified: false,
-      emailOTP: otp,
+      emailOTP: sha256(otp),
       emailOTPExpires: otpExpires
     });
     await user.save();
@@ -303,56 +304,57 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    // Validate input
     const { error, value } = loginSchema.validate(req.body);
     if (error) {
-      return res.status(400).json({ 
-        error: 'Validation failed', 
-        details: error.details[0].message 
-      });
+      return res.status(400).json({ error: 'Validation failed', details: error.details[0].message });
     }
 
-    const { email, password } = value;
+    const { password } = value;
+    const email = String(value.email).toLowerCase().trim();
 
-    console.log('Login attempt for email:', email);
-
-    // Find user by email
     const user = await User.findOne({ email });
+    // Same message for unknown email and wrong password
+    const invalid = () => res.status(401).json({ error: 'Invalid credentials' });
+
     if (!user) {
-      console.log('User not found for email:', email);
-      return res.status(401).json({ error: 'Invalid credentials' });
+      // Spend comparable time so response timing does not reveal whether the account exists
+      await require('bcryptjs').compare(password, '$2a$12$C6UzMDM.H6dfI/f/IKcEeO5zW1y4sQYQJ2Xr0kS3Zl5mQe7g3p0pG');
+      return invalid();
     }
 
-    console.log('User found, isEmailVerified:', user.isEmailVerified);
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const mins = Math.ceil((user.lockUntil - Date.now()) / 60000);
+      return res.status(429).json({ error: `Account temporarily locked. Try again in ${mins} minute(s).` });
+    }
 
-    // Check if user is active
+    const isPasswordValid = await user.comparePassword(password);
+    if (!isPasswordValid) {
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
+      if (user.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+        user.lockUntil = new Date(Date.now() + LOCK_MINUTES * 60 * 1000);
+        user.loginAttempts = 0;
+      }
+      await user.save();
+      return invalid();
+    }
+
+    // Only reveal account state after the correct password was supplied
     if (!user.isActive) {
       return res.status(401).json({ error: 'Account is deactivated' });
     }
-
-    // Check if email is verified
     if (!user.isEmailVerified) {
-      console.log('Login rejected - email not verified for:', email);
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Email not verified',
         message: 'Please verify your email with OTP before logging in. Check your inbox for the OTP.'
       });
     }
 
-    // Verify password
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Update last login
+    user.loginAttempts = 0;
+    user.lockUntil = undefined;
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate token
     const token = generateToken(user._id);
-
-    console.log('Login successful for:', email);
 
     res.json({
       message: 'Login successful',
@@ -366,7 +368,7 @@ const login = async (req, res) => {
       token
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Login error:', error.message);
     res.status(500).json({ error: 'Server error during login' });
   }
 };
@@ -419,7 +421,6 @@ const googleCallback = async (req, res) => {
   }
 
   try {
-    console.log('Google OAuth: Exchanging code for access token');
     // Exchange code for access token
     const tokenResponse = await axios.post(
       'https://oauth2.googleapis.com/token',
@@ -433,7 +434,6 @@ const googleCallback = async (req, res) => {
     );
 
     const { access_token } = tokenResponse.data;
-    console.log('Google OAuth: Access token received');
 
     // Get user info from Google
     const userResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -443,7 +443,6 @@ const googleCallback = async (req, res) => {
     });
 
     const googleUser = userResponse.data;
-    console.log('Google OAuth: User info received', { email: googleUser.email, name: googleUser.name });
 
     if (!googleUser.email) {
       console.error('Google OAuth: No email in user info');
@@ -454,14 +453,12 @@ const googleCallback = async (req, res) => {
     let user = await User.findOne({ email: googleUser.email });
 
     if (user) {
-      console.log('Google OAuth: Existing user found, updating');
       // Update Google info if user exists
       user.googleId = googleUser.id;
       user.avatar = googleUser.picture;
       user.lastLogin = new Date();
       await user.save();
     } else {
-      console.log('Google OAuth: Creating new user');
       // Create new user
       const username = googleUser.name || googleUser.email.split('@')[0];
       
@@ -490,7 +487,6 @@ const googleCallback = async (req, res) => {
 
     // Generate JWT token
     const token = generateToken(user._id);
-    console.log('Google OAuth: JWT token generated, redirecting to dashboard');
 
     // Redirect to frontend with token - directly to dashboard
     res.redirect(`https://cmcloud.online/dashboard?token=${token}&google=true`);
@@ -617,32 +613,24 @@ const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    console.log('=== OTP VERIFICATION ATTEMPT ===');
-    console.log('Email:', email);
-    console.log('OTP:', otp);
     console.log('Current time:', new Date().toISOString());
 
     if (!email || !otp) {
-      console.log('ERROR: Email or OTP not provided');
+      return res.status(400).json({ error: 'Email and OTP are required' });
+    }
+
+    if (typeof email !== 'string' || typeof otp !== 'string') {
       return res.status(400).json({ error: 'Email and OTP are required' });
     }
 
     // Find user by email
-    const user = await User.findOne({ email });
-    
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+    // Same response for "no such user" and "wrong code" so emails cannot be enumerated
     if (!user) {
-      console.log('ERROR: No user found with this email');
-      return res.status(404).json({ 
-        error: 'User not found',
-        message: 'No user found with this email address.'
-      });
+      return res.status(400).json({ error: 'Invalid OTP', message: 'The OTP you entered is incorrect.' });
     }
 
-    console.log('User found:', user.email);
-    console.log('Stored OTP:', user.emailOTP);
-    console.log('OTP expires at:', user.emailOTPExpires);
-    console.log('OTP expired:', user.emailOTPExpires < Date.now());
-    console.log('Current isEmailVerified:', user.isEmailVerified);
 
     // Check if already verified
     if (user.isEmailVerified) {
@@ -654,7 +642,6 @@ const verifyOTP = async (req, res) => {
 
     // Check if OTP is expired
     if (user.emailOTPExpires < Date.now()) {
-      console.log('ERROR: OTP has expired');
       return res.status(400).json({ 
         error: 'Expired OTP',
         message: 'This OTP has expired. Please request a new OTP.'
@@ -662,15 +649,19 @@ const verifyOTP = async (req, res) => {
     }
 
     // Verify OTP
-    if (user.emailOTP !== otp) {
-      console.log('ERROR: Invalid OTP');
+    if ((user.emailOTPAttempts || 0) >= MAX_OTP_ATTEMPTS) {
+      return res.status(429).json({ error: 'Too many attempts', message: 'Too many incorrect codes. Please request a new OTP.' });
+    }
+
+    if (!user.emailOTP || !safeEqual(user.emailOTP, sha256(otp))) {
+      user.emailOTPAttempts = (user.emailOTPAttempts || 0) + 1;
+      await user.save();
       return res.status(400).json({ 
         error: 'Invalid OTP',
         message: 'The OTP you entered is incorrect.'
       });
     }
 
-    console.log('Updating user verification status...');
     
     user.isEmailVerified = true;
     user.emailOTP = undefined;
@@ -678,14 +669,10 @@ const verifyOTP = async (req, res) => {
     
     const savedUser = await user.save();
     
-    console.log('User saved successfully');
-    console.log('New isEmailVerified:', savedUser.isEmailVerified);
-    console.log('OTP verification successful for:', savedUser.email);
 
     // Send welcome email after verification
     try {
       await sendWelcomeEmail(savedUser.email, savedUser.username);
-      console.log('Welcome email sent');
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
       // Don't fail the verification if welcome email fails
@@ -735,8 +722,9 @@ const resendOTP = async (req, res) => {
     const otp = generateOTP();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    user.emailOTP = otp;
+    user.emailOTP = sha256(otp);
     user.emailOTPExpires = otpExpires;
+    user.emailOTPAttempts = 0;
     await user.save();
 
     // Send OTP email
@@ -756,42 +744,32 @@ const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
 
-    console.log('=== EMAIL VERIFICATION ATTEMPT ===');
-    console.log('Token:', token);
     console.log('Current time:', new Date().toISOString());
     console.log('Request headers:', JSON.stringify(req.headers, null, 2));
 
     if (!token) {
-      console.log('ERROR: No token provided');
       return res.status(400).json({ error: 'Verification token is required' });
     }
 
     // First try to find user by token without expiration check
-    const userWithoutExpiry = await User.findOne({ emailVerificationToken: token });
+    const userWithoutExpiry = await User.findOne({ emailVerificationToken: sha256(String(token)) });
     
     if (!userWithoutExpiry) {
-      console.log('ERROR: No user found with this token');
       return res.status(400).json({ 
         error: 'Invalid verification token',
         message: 'No user found with this verification token.'
       });
     }
 
-    console.log('User found:', userWithoutExpiry.email);
-    console.log('Token expires at:', userWithoutExpiry.emailVerificationExpires);
-    console.log('Token expired:', userWithoutExpiry.emailVerificationExpires < Date.now());
-    console.log('Current isEmailVerified:', userWithoutExpiry.isEmailVerified);
 
     // Check if token is expired
     if (userWithoutExpiry.emailVerificationExpires < Date.now()) {
-      console.log('ERROR: Token has expired');
       return res.status(400).json({ 
         error: 'Expired verification token',
         message: 'This verification link has expired. Please request a new verification email.'
       });
     }
 
-    console.log('Updating user verification status...');
     
     userWithoutExpiry.isEmailVerified = true;
     userWithoutExpiry.emailVerificationToken = undefined;
@@ -799,14 +777,10 @@ const verifyEmail = async (req, res) => {
     
     const savedUser = await userWithoutExpiry.save();
     
-    console.log('User saved successfully');
-    console.log('New isEmailVerified:', savedUser.isEmailVerified);
-    console.log('Email verification successful for:', savedUser.email);
 
     // Send welcome email after verification
     try {
       await sendWelcomeEmail(savedUser.email, savedUser.username);
-      console.log('Welcome email sent');
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
       // Don't fail the verification if welcome email fails
@@ -856,7 +830,7 @@ const resendVerificationEmail = async (req, res) => {
     const verificationToken = generateVerificationToken();
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    user.emailVerificationToken = verificationToken;
+    user.emailVerificationToken = sha256(verificationToken);
     user.emailVerificationExpires = verificationExpires;
     await user.save();
 
@@ -894,7 +868,7 @@ const forgotPassword = async (req, res) => {
     const resetToken = generateVerificationToken();
     const resetExpires = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
 
-    user.resetPasswordToken = resetToken;
+    user.resetPasswordToken = sha256(resetToken);
     user.resetPasswordExpires = resetExpires;
     await user.save();
 
@@ -958,7 +932,6 @@ const forgotPassword = async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`Password reset email sent to ${email}`);
 
     res.json({ 
       message: 'If an account exists with this email, a password reset link has been sent.' 
@@ -986,12 +959,13 @@ const resetPassword = async (req, res) => {
       return res.status(400).json({ error: 'Passwords do not match' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    const pwProblem = passwordProblem(password);
+    if (pwProblem) {
+      return res.status(400).json({ error: pwProblem });
     }
 
     const user = await User.findOne({
-      resetPasswordToken: token,
+      resetPasswordToken: sha256(token),
       resetPasswordExpires: { $gt: Date.now() }
     });
 
@@ -1004,6 +978,8 @@ const resetPassword = async (req, res) => {
 
     // Set new password
     user.password = password;
+    user.loginAttempts = 0;
+    user.lockUntil = undefined;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();

@@ -1,3 +1,4 @@
+const { escapeRegex } = require('../middleware/security');
 const GeneratedFile = require('../models/GeneratedFile');
 
 class HistoryController {
@@ -17,7 +18,7 @@ class HistoryController {
         query.$or = [
           { name: { $regex: search, $options: 'i' } },
           { description: { $regex: search, $options: 'i' } },
-          { tags: { $in: [new RegExp(search, 'i')] } }
+          { tags: { $in: [new RegExp(escapeRegex(search), 'i')] } }
         ];
       }
 

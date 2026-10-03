@@ -97,14 +97,17 @@ const Chat: React.FC = () => {
     const socketBaseUrl = import.meta.env.VITE_API_URL 
       ? import.meta.env.VITE_API_URL.replace('/api', '') 
       : 'https://api.cmcloud.online'
-    const newSocket = io(socketBaseUrl)
+    const newSocket = io(socketBaseUrl, {
+      // function form re-reads the token on every (re)connect; the server verifies it
+      auth: (cb) => cb({ token: localStorage.getItem('token') || sessionStorage.getItem('token') }),
+    })
     setSocket(newSocket)
 
     newSocket.on('connect', () => {
       console.log('Connected to socket server')
       const userId = (user as any)?._id || user?.id
       if (userId) {
-        newSocket.emit('join', userId)
+        newSocket.emit('join')
         // Update online status
         fetch(`${import.meta.env.VITE_API_URL || 'https://api.cmcloud.online/api'}/chat/online-status`, {
           method: 'PUT',
@@ -486,7 +489,7 @@ const Chat: React.FC = () => {
         ))
         setUserPoints(data.userPoints)
         if (socket) {
-          socket.emit('question-solved', { messageId, solverId: getUserId() })
+          socket.emit('question-solved', { messageId })
         }
         toast.success('Question solved! +1 point')
       }

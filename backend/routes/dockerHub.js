@@ -1,5 +1,8 @@
 const express = require('express');
+const { tokenFromHeaders } = require('../middleware/security');
+
 const router = express.Router();
+router.use(tokenFromHeaders);
 const dockerHubController = require('../controllers/dockerHubController');
 const { auth } = require('../middleware/auth');
 

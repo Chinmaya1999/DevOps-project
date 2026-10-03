@@ -3,6 +3,8 @@ const rateLimit = require('express-rate-limit');
 const { auth } = require('../middleware/auth');
 const { register, login, getProfile, googleAuth, googleCallback, githubAuth, githubCallback, verifyEmail, verifyOTP, resendOTP, resendVerificationEmail, forgotPassword, resetPassword } = require('../controllers/authController');
 
+const { limiters } = require('../middleware/security');
+
 const router = express.Router();
 
 // Rate limiter for registration (strict - prevent fake registrations)
@@ -17,7 +19,7 @@ const registerLimiter = rateLimit({
 // Rate limiter for login (lenient - allow normal usage)
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Allow 100 login requests per 15 minutes
+  max: 20, // 20 login attempts per 15 minutes per IP
   message: 'Too many login attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -42,19 +44,19 @@ router.post('/login', loginLimiter, login);
 router.get('/verify-email', verifyEmail);
 
 // Verify OTP
-router.post('/verify-otp', verifyOTP);
+router.post('/verify-otp', limiters.otpVerify, verifyOTP);
 
 // Resend OTP
-router.post('/resend-otp', resendOTP);
+router.post('/resend-otp', limiters.otpResend, resendOTP);
 
 // Resend verification email
-router.post('/resend-verification', resendVerificationEmail);
+router.post('/resend-verification', limiters.otpResend, resendVerificationEmail);
 
 // Forgot password
 router.post('/forgot-password', passwordResetLimiter, forgotPassword);
 
 // Reset password
-router.post('/reset-password', resetPassword);
+router.post('/reset-password', limiters.passwordReset, resetPassword);
 
 // Google OAuth
 router.get('/google', googleAuth);

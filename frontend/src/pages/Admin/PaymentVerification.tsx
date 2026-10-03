@@ -58,6 +58,19 @@ const PaymentVerification: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [processing, setProcessing] = useState(false);
   const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
+  const [screenshotSrc, setScreenshotSrc] = useState<string | null>(null);
+
+  // Screenshots are private; fetch them with the auth header and show via a temporary blob URL
+  useEffect(() => {
+    let objectUrl: string | null = null
+    setScreenshotSrc(null)
+    const file = selectedPayment?.screenshotUrl?.split('/').pop()
+    if (!file) return
+    api.get(`/payment/screenshot/${file}`, { responseType: 'blob' })
+      .then((res) => { objectUrl = URL.createObjectURL(res.data); setScreenshotSrc(objectUrl) })
+      .catch(() => setScreenshotSrc(null))
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
+  }, [selectedPayment])
 
   useEffect(() => {
     fetchPayments();
@@ -444,7 +457,7 @@ const PaymentVerification: React.FC = () => {
                     <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Payment Screenshot</h3>
                     <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                       <img
-                        src={selectedPayment.screenshotUrl}
+                        src={screenshotSrc || undefined}
                         alt="Payment Screenshot"
                         className="max-w-full h-auto rounded-lg"
                       />

@@ -1,40 +1,49 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Layout from './components/Layout/Layout'
-import Login from './pages/Auth/Login'
-import Register from './pages/Auth/Register'
-import VerifyEmail from './pages/Auth/VerifyEmail'
-import ForgotPassword from './pages/Auth/ForgotPassword'
-import ResetPassword from './pages/Auth/ResetPassword'
-import Landing from './pages/Landing/Landing'
-import Dashboard from './pages/Dashboard/Dashboard'
-import Generator from './pages/Generator/Generator'
-import History from './pages/History/History'
-import TerraformDemos from './pages/TerraformDemos/TerraformDemos'
-import Validator from './pages/Validator/Validator'
-import DevOpsDocs from './pages/DevOpsDocs/DevOpsDocs'
-import DevOpsDocDetail from './pages/DevOpsDocs/DevOpsDocDetail'
-import Roadmap from './pages/Roadmap/Roadmap'
-import ResourceDetail from './pages/ResourceDetail/ResourceDetail'
-import Admin from './pages/Admin/Admin'
-import GitHubIntegration from './pages/GitHub/GitHubIntegration'
-import Vision from './pages/Vision/Vision'
-import VisionSuccess from './pages/Vision/VisionSuccess'
-import Deployments from './pages/Deployments/Deployments'
-import Payment from './pages/Payment/Payment'
-import PaymentVerification from './pages/Admin/PaymentVerification'
-import Contact from './pages/Contact/Contact'
-import CloudCostAnalysis from './components/CloudCostAnalysis'
-import Features from './pages/Features/Features'
-import Pricing from './pages/Pricing/Pricing'
-import About from './pages/About/About'
-import Chat from './pages/Chat/Chat'
-import BlogList from './pages/Blog/BlogList'
-import CreateBlog from './pages/Blog/CreateBlog'
-import BlogDetail from './pages/Blog/BlogDetail'
-import EditBlog from './pages/Blog/EditBlog'
-import MyBlogs from './pages/Blog/MyBlogs'
+const Login = lazy(() => import('./pages/Auth/Login'))
+const Register = lazy(() => import('./pages/Auth/Register'))
+const VerifyEmail = lazy(() => import('./pages/Auth/VerifyEmail'))
+const ForgotPassword = lazy(() => import('./pages/Auth/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/Auth/ResetPassword'))
+const Landing = lazy(() => import('./pages/Landing/Landing'))
+const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'))
+const Generator = lazy(() => import('./pages/Generator/Generator'))
+const History = lazy(() => import('./pages/History/History'))
+const TerraformDemos = lazy(() => import('./pages/TerraformDemos/TerraformDemos'))
+const Bundle = lazy(() => import('./pages/Bundle/Bundle'))
+const Toolbox = lazy(() => import('./pages/Toolbox/Toolbox'))
+const Validator = lazy(() => import('./pages/Validator/Validator'))
+const DevOpsDocs = lazy(() => import('./pages/DevOpsDocs/DevOpsDocs'))
+const DevOpsDocDetail = lazy(() => import('./pages/DevOpsDocs/DevOpsDocDetail'))
+const Roadmap = lazy(() => import('./pages/Roadmap/Roadmap'))
+const ResourceDetail = lazy(() => import('./pages/ResourceDetail/ResourceDetail'))
+const Admin = lazy(() => import('./pages/Admin/Admin'))
+const GitHubIntegration = lazy(() => import('./pages/GitHub/GitHubIntegration'))
+const Vision = lazy(() => import('./pages/Vision/Vision'))
+const VisionSuccess = lazy(() => import('./pages/Vision/VisionSuccess'))
+const Deployments = lazy(() => import('./pages/Deployments/Deployments'))
+const Payment = lazy(() => import('./pages/Payment/Payment'))
+const PaymentVerification = lazy(() => import('./pages/Admin/PaymentVerification'))
+const Contact = lazy(() => import('./pages/Contact/Contact'))
+const CloudCostAnalysis = lazy(() => import('./components/CloudCostAnalysis'))
+const Features = lazy(() => import('./pages/Features/Features'))
+const Pricing = lazy(() => import('./pages/Pricing/Pricing'))
+const About = lazy(() => import('./pages/About/About'))
+const Chat = lazy(() => import('./pages/Chat/Chat'))
+const BlogList = lazy(() => import('./pages/Blog/BlogList'))
+const CreateBlog = lazy(() => import('./pages/Blog/CreateBlog'))
+const BlogDetail = lazy(() => import('./pages/Blog/BlogDetail'))
+const EditBlog = lazy(() => import('./pages/Blog/EditBlog'))
+const MyBlogs = lazy(() => import('./pages/Blog/MyBlogs'))
 import LoadingSpinner from './components/UI/LoadingSpinner'
+
+const PageFallback = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <LoadingSpinner size="lg" />
+  </div>
+)
 
 function App() {
   const { user, loading } = useAuth()
@@ -49,6 +58,7 @@ function App() {
 
   if (!user) {
     return (
+      <Suspense fallback={<PageFallback />}>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -62,10 +72,12 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     )
   }
 
   return (
+    <Suspense fallback={<PageFallback />}>
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
@@ -78,6 +90,8 @@ function App() {
         <Route path="resources/:type/:id" element={<ResourceDetail />} />
         <Route path="admin" element={<Admin />} />
         <Route path="terraform-demos" element={<TerraformDemos />} />
+        <Route path="bundle" element={<Bundle />} />
+        <Route path="toolbox" element={<Toolbox />} />
         <Route path="validator" element={<Validator />} />
         <Route path="history" element={<History />} />
         <Route path="github" element={<GitHubIntegration />} />
@@ -95,6 +109,7 @@ function App() {
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>
+    </Suspense>
   )
 }
 

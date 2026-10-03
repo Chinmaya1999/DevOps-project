@@ -6,6 +6,8 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const http = require('http');
 require('dotenv').config();
+const { sanitizeInput, assertSecureConfig } = require('./middleware/security');
+assertSecureConfig();
 
 const authRoutes = require('./routes/auth');
 const generateRoutes = require('./routes/generate');
@@ -25,15 +27,22 @@ const contactRoutes = require('./routes/contact');
 const chatRoutes = require('./routes/chat');
 const blogRoutes = require('./routes/blog');
 const costAnalysisRoutes = require('./routes/costAnalysis');
+const toolsRoutes = require('./routes/tools');
 const { initializeSocket } = require('./socket');
 
 const app = express();
+// Needed behind nginx / a load balancer so rate limits key on the real client IP (set TRUST_PROXY=1)
+if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
+app.disable('x-powered-by');
 const server = http.createServer(app);
 initializeSocket(server);
 
 // Security middleware
 app.use(helmet({
-  contentSecurityPolicy: false, // Disable CSP to allow loading images from different origins
+  contentSecurityPolicy: {
+    // This server returns JSON and images only; it never needs to execute scripts
+    directives: { defaultSrc: ["'none'"], imgSrc: ["'self'", 'data:'], frameAncestors: ["'none'"] }
+  },
   crossOriginEmbedderPolicy: false,
   hsts: {
     maxAge: 31536000,
@@ -91,10 +100,13 @@ app.use(cors({
 // Handle preflight requests
 app.options('*', cors());
 
+// Lightweight health endpoint for load balancers / Kubernetes probes
+app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
 // Rate limiting - increased limits for production
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Increased from 100 to 1000 requests per window
+  max: 300, // per IP per window
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -103,13 +115,18 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Body parser middleware
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(cookieParser());
+app.use(sanitizeInput);
 
 // Serve static files for payment screenshots with CORS headers
+// Payment screenshots contain personal financial data: never served statically (see /api/payment/screenshot/:file)
+app.use('/uploads/payments', (req, res) => res.status(404).end());
+
 app.use('/uploads', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  if (allowedOrigins.includes(req.headers.origin)) res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
   res.header('Access-Control-Allow-Methods', 'GET');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
   next();
@@ -142,6 +159,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/cost-analysis', costAnalysisRoutes);
+app.use('/api/tools', toolsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

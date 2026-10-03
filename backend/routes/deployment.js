@@ -1,5 +1,8 @@
 const express = require('express');
+const { limiters } = require('../middleware/security');
+
 const router = express.Router();
+router.use(limiters.deployment);
 const deploymentController = require('../controllers/deploymentController');
 const { auth } = require('../middleware/auth');
 

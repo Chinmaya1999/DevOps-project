@@ -3,17 +3,22 @@ const User = require('../models/User');
 
 const auth = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const token = req.header('Authorization')?.replace(/^Bearer\s+/i, '');
     
     if (!token) {
       return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
     const user = await User.findById(decoded.userId).select('-password');
     
     if (!user || !user.isActive) {
       return res.status(401).json({ error: 'Invalid token or user not found.' });
+    }
+
+    // Sessions issued before the last password change/reset are no longer valid
+    if (user.passwordChangedAt && decoded.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) {
+      return res.status(401).json({ error: 'Session expired. Please log in again.' });
     }
 
     req.user = user;

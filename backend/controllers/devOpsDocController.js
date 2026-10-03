@@ -1,3 +1,4 @@
+const { escapeRegex } = require('../middleware/security');
 const DevOpsDoc = require('../models/DevOpsDoc');
 
 class DevOpsDocController {
@@ -8,7 +9,7 @@ class DevOpsDocController {
       let filter = { isActive: true };
       
       if (category) filter.category = category;
-      if (technology) filter.technology = new RegExp(technology, 'i');
+      if (technology) filter.technology = new RegExp(escapeRegex(technology), 'i');
       if (difficulty) filter.difficulty = difficulty;
 
       const docs = await DevOpsDoc.find(filter)

@@ -239,6 +239,7 @@ const Layout: React.FC = () => {
     { name: 'Cloud Cost Analysis', href: '/cloud-cost-analysis', icon: DollarSign },
     { name: 'Deployments', href: '/deployments', icon: Server },
     { name: 'GitHub Integration', href: '/github', icon: Github },
+    { name: 'Full-stack Bundle (ZIP)', href: '/bundle', icon: Package },
     { name: 'Jenkins Pipeline', href: '/generator/jenkins', icon: Server },
     { name: 'GitHub Actions', href: '/generator/github-actions', icon: Zap },
     { name: 'Ansible Playbooks', href: '/generator/ansible', icon: Shield },
@@ -247,6 +248,7 @@ const Layout: React.FC = () => {
     { name: 'Dockerfile', href: '/generator/dockerfile', icon: Container },
     { name: 'DevOps Documentation', href: '/devops-docs', icon: BookOpen },
     { name: 'Terraform Demos', href: '/terraform-demos', icon: Database },
+    { name: 'DevOps Toolbox', href: '/toolbox', icon: Terminal },
     { name: 'Validator', href: '/validator', icon: CheckCircle },
     { name: 'History', href: '/history', icon: History },
     { name: 'Upgrade to Premium', href: '/payment', icon: CreditCard },
@@ -278,7 +280,7 @@ const Layout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
+    <div className="min-h-screen bg-secondary-50 dark:bg-transparent">
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-secondary-900/80" onClick={() => setSidebarOpen(false)} />
@@ -343,7 +345,7 @@ const Layout: React.FC = () => {
                 onClick={() => setScriptsDropdownOpen(!scriptsDropdownOpen)}
                 className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                   isScriptsActive() 
-                    ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300' 
+                    ? 'bg-primary-100 text-primary-700 dark:bg-gradient-to-r dark:from-cyan-500/20 dark:to-violet-500/20 dark:text-cyan-200 dark:ring-1 dark:ring-cyan-400/30' 
                     : 'text-secondary-600 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:bg-secondary-700'
                 }`}
               >
@@ -383,7 +385,7 @@ const Layout: React.FC = () => {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:block">
-        <div className="h-full bg-white dark:bg-secondary-800 border-r border-secondary-200 dark:border-secondary-700">
+        <div className="h-full bg-white dark:bg-ink-900/90 dark:backdrop-blur-xl border-r border-secondary-200 dark:border-white/10">
           <div className="flex items-center p-6 border-b border-secondary-200 dark:border-secondary-700">
             <GitBranch className="w-8 h-8 text-primary-600" />
             <span className="ml-2 text-xl font-bold text-secondary-900 dark:text-secondary-100">
@@ -434,7 +436,7 @@ const Layout: React.FC = () => {
                 onClick={() => setScriptsDropdownOpen(!scriptsDropdownOpen)}
                 className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                   isScriptsActive() 
-                    ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300' 
+                    ? 'bg-primary-100 text-primary-700 dark:bg-gradient-to-r dark:from-cyan-500/20 dark:to-violet-500/20 dark:text-cyan-200 dark:ring-1 dark:ring-cyan-400/30' 
                     : 'text-secondary-600 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:bg-secondary-700'
                 }`}
               >
@@ -474,7 +476,7 @@ const Layout: React.FC = () => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <div className="sticky top-0 z-40 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-700">
+        <div className="sticky top-0 z-40 bg-white/80 dark:bg-ink-950/70 backdrop-blur-xl border-b border-gray-200 dark:border-white/10">
           <div className="flex items-center justify-between px-4 py-3">
             <button
               onClick={() => setSidebarOpen(true)}

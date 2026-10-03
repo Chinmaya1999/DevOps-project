@@ -8,6 +8,8 @@ export default {
   theme: {
     extend: {
       colors: {
+        ink: { 950: '#05070d', 900: '#0a0e1a', 800: '#0f1424', 700: '#161c30', 600: '#1f2740' },
+        neon: { cyan: '#22d3ee', violet: '#8b5cf6', pink: '#ec4899', lime: '#a3e635' },
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',
@@ -71,6 +73,7 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Space Grotesk', 'Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'Consolas', 'monospace'],
       },
       animation: {

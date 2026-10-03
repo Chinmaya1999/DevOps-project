@@ -72,6 +72,20 @@ const userSchema = new mongoose.Schema({
   emailOTPExpires: {
     type: Date
   },
+  emailOTPAttempts: {
+    type: Number,
+    default: 0
+  },
+  loginAttempts: {
+    type: Number,
+    default: 0
+  },
+  lockUntil: {
+    type: Date
+  },
+  passwordChangedAt: {
+    type: Date
+  },
   resetPasswordToken: {
     type: String
   },
@@ -128,6 +142,8 @@ userSchema.pre('save', async function(next) {
   try {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
+    // Invalidate every JWT issued before this moment (new users: harmless; resets/changes: logs out old sessions)
+    this.passwordChangedAt = new Date(Date.now() - 1000);
     next();
   } catch (error) {
     next(error);
@@ -143,6 +159,14 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 userSchema.methods.toJSON = function() {
   const userObject = this.toObject();
   delete userObject.password;
+  delete userObject.emailOTP;
+  delete userObject.emailOTPExpires;
+  delete userObject.emailOTPAttempts;
+  delete userObject.emailVerificationToken;
+  delete userObject.resetPasswordToken;
+  delete userObject.resetPasswordExpires;
+  delete userObject.loginAttempts;
+  delete userObject.lockUntil;
   return userObject;
 };
 

@@ -3,7 +3,7 @@ const Joi = require('joi');
 const registerSchema = Joi.object({
   username: Joi.string().min(3).max(30).required(),
   email: Joi.string().email().required(),
-  password: Joi.string().min(6).required(),
+  password: Joi.string().min(10).max(128).pattern(/[A-Za-z]/).pattern(/\d/).required().messages({'string.min':'Password must be at least 10 characters long','string.pattern.base':'Password must contain letters and numbers'}),
   workExperience: Joi.string().optional(),
   domains: Joi.array().items(Joi.string()).optional()
 });
@@ -14,7 +14,7 @@ const loginSchema = Joi.object({
 });
 
 const generateJenkinsSchema = Joi.object({
-  projectName: Joi.string().required(),
+  projectName: Joi.string().pattern(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,62}$/).required().messages({'string.pattern.base': 'projectName may only contain letters, numbers, - and _'}),
   repositoryUrl: Joi.string().uri().required(),
   branch: Joi.string().default('main'),
   dockerImage: Joi.string().optional(),
@@ -25,7 +25,7 @@ const generateJenkinsSchema = Joi.object({
 });
 
 const generateGitHubActionsSchema = Joi.object({
-  projectName: Joi.string().required(),
+  projectName: Joi.string().pattern(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,62}$/).required().messages({'string.pattern.base': 'projectName may only contain letters, numbers, - and _'}),
   repositoryUrl: Joi.string().uri().required(),
   branch: Joi.string().default('main'),
   nodeVersion: Joi.string().default('18'),
@@ -67,7 +67,7 @@ const generateKubernetesSchema = Joi.object({
 });
 
 const generateTerraformSchema = Joi.object({
-  projectName: Joi.string().required(),
+  projectName: Joi.string().pattern(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,62}$/).required().messages({'string.pattern.base': 'projectName may only contain letters, numbers, - and _'}),
   provider: Joi.string().valid('aws', 'gcp', 'azure').required(),
   region: Joi.string().required(),
   resources: Joi.array().items(Joi.object({
@@ -86,3 +86,15 @@ module.exports = {
   generateKubernetesSchema,
   generateTerraformSchema
 };
+
+
+const generateBundleSchema = Joi.object({
+  appName: Joi.string().pattern(/^[a-z][a-z0-9-]{1,40}$/).required()
+    .messages({ 'string.pattern.base': 'appName must be lowercase letters, numbers and dashes (2-41 chars)' }),
+  runtime: Joi.string().valid('node', 'python', 'go', 'static').required(),
+  port: Joi.number().integer().min(1).max(65535).default(3000),
+  replicas: Joi.number().integer().min(1).max(10).default(2),
+  dockerHubUser: Joi.string().pattern(/^[a-z0-9][a-z0-9_-]{1,38}$/).required()
+});
+
+module.exports.generateBundleSchema = generateBundleSchema;

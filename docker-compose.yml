@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   frontend:
     image: awsmallick1999/infrapilot-frontend:latest
@@ -7,6 +5,8 @@ services:
     restart: always
     ports:
       - "3000:80"
+    depends_on:
+      - backend
     networks:
       - app-network
 
@@ -16,15 +16,27 @@ services:
     restart: always
     ports:
       - "5001:5001"
-    environment:
-      - GOOGLE_CLIENT_ID=826989147293-ofpofmqf6rk5e0g98kk5qsn0onsf3mr6.apps.googleusercontent.com
-      - GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET_HERE
-      - GITHUB_CLIENT_ID=YOUR_GITHUB_CLIENT_ID_HERE
-      - GITHUB_CLIENT_SECRET=YOUR_GITHUB_CLIENT_SECRET_HERE
+    # All secrets (JWT_SECRET, OAuth client IDs/secrets, SMTP, ...) live in .env — see backend/.env.example
     env_file:
       - .env
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/mernapp
+    depends_on:
+      - mongodb
     networks:
       - app-network
+
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    restart: always
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - app-network
+
+volumes:
+  mongo-data:
 
 networks:
   app-network:

@@ -6,9 +6,13 @@
   "dependencies": {
     "@ant-design/icons": "^6.3.2",
     "@monaco-editor/react": "^4.5.2",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
+    "@types/three": "^0.160.0",
     "antd": "^6.5.1",
     "axios": "^1.5.0",
     "clsx": "^2.0.0",
+    "framer-motion": "^11.18.2",
     "lucide-react": "^0.279.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -17,7 +21,8 @@
     "react-router-dom": "^6.15.0",
     "recharts": "^3.10.1",
     "socket.io-client": "^4.8.3",
-    "tailwind-merge": "^1.14.0"
+    "tailwind-merge": "^1.14.0",
+    "three": "^0.160.1"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

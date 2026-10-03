@@ -11,8 +11,41 @@ env:
   DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
 jobs:
+  # Quality gate: nothing is built or deployed unless this passes
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: Backend tests
+        working-directory: backend
+        run: npm ci && npm test
+      - name: Frontend typecheck and build
+        working-directory: frontend
+        run: npm ci --legacy-peer-deps && npm run build
+      - name: Scan repo for vulnerabilities and committed secrets
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          skip-dirs: node_modules
+          exit-code: '0'   # report-only for now; set to '1' once the backlog is clean
+      - name: Dependency audit (high+)
+        run: |
+          (cd backend && npm audit --omit=dev --audit-level=high) || echo "::warning::backend audit found issues"
+          (cd frontend && npm audit --omit=dev --audit-level=high) || echo "::warning::frontend audit found issues"
+
   # Build and Push Docker Images
   build-backend:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -32,7 +65,7 @@ jobs:
         with:
           context: ./backend
           file: ./backend/Dockerfile
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: |
             awsmallick1999/infrapilot-backend:latest
             awsmallick1999/infrapilot-backend:${{ github.sha }}
@@ -40,6 +73,7 @@ jobs:
           cache-to: type=registry,ref=awsmallick1999/infrapilot-backend:buildcache,mode=max
 
   build-frontend:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -59,7 +93,7 @@ jobs:
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: |
             awsmallick1999/infrapilot-frontend:latest
             awsmallick1999/infrapilot-frontend:${{ github.sha }}
@@ -69,13 +103,14 @@ jobs:
   # Deploy to AWS EC2
   deploy:
     needs: [build-backend, build-frontend]
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
@@ -141,7 +176,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Rollback deployment
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}

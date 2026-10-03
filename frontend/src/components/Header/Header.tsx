@@ -7,155 +7,100 @@ interface HeaderProps {
   transparent?: boolean
 }
 
+// Only routes that exist for signed-out visitors (see App.tsx)
+const navigation = [
+  { name: 'Features', href: '/features' },
+  { name: 'Pricing', href: '/pricing' },
+  { name: 'About', href: '/about' },
+  { name: 'Contact', href: '/contact' },
+]
+
 const Header: React.FC<HeaderProps> = ({ showAuthButtons = true, transparent = false }) => {
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
-  const location = useLocation()
+  const [open, setOpen] = React.useState(false)
+  const [scrolled, setScrolled] = React.useState(false)
+  const { pathname } = useLocation()
 
-  const navigation = [
-    { name: 'Features', href: '/features' },
-    { name: 'Pricing', href: '/pricing' },
-    { name: 'Documentation', href: '/devops-docs' },
-    { name: 'About', href: '/about' },
-    { name: 'Contact', href: '/contact' }
-  ]
+  React.useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
-  const isActive = (href: string) => {
-    return location.pathname === href
-  }
+  const solid = !transparent || scrolled || open
 
   return (
-    <header className={`w-full z-50 ${
-      transparent 
-        ? 'absolute top-0 left-0 right-0 bg-blue-700' 
-        : 'bg-blue-600 border-b border-blue-700 shadow-lg'
-    }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <GitBranch className={`w-8 h-8 ${transparent ? 'text-white' : 'text-white'}`} />
-            <span className={`text-xl font-bold ${transparent ? 'text-white' : 'text-white'}`}>
-              AutoDevOps
-            </span>
-          </Link>
+    <>
+    {!transparent && <div className="h-16" aria-hidden="true" />}
+    <header
+      className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
+        solid ? 'bg-ink-950/75 backdrop-blur-xl border-b border-white/10' : 'bg-transparent border-b border-transparent'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <span className="p-1.5 rounded-lg hero-gradient shadow-lg shadow-cyan-500/30 group-hover:rotate-6 transition-transform">
+            <GitBranch className="w-5 h-5 text-white" />
+          </span>
+          <span className="font-display text-lg font-bold text-white tracking-tight">AutoDevOps</span>
+        </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`text-sm font-medium transition-colors ${
-                  isActive(item.href)
-                    ? transparent 
-                      ? 'text-white'
-                      : 'text-white font-semibold'
-                    : transparent
-                      ? 'text-white/90 hover:text-white'
-                      : 'text-white/90 hover:text-white'
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Auth Buttons */}
-          {showAuthButtons && (
-            <div className="hidden md:flex items-center space-x-4">
-              <Link
-                to="/login"
-                className={`text-sm font-medium transition-colors ${
-                  transparent
-                    ? 'text-white/90 hover:text-white'
-                    : 'text-white/90 hover:text-white'
-                }`}
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/register"
-                className="px-4 py-2 text-sm font-medium text-blue-600 bg-white rounded-lg hover:bg-gray-100 transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                Get Started
-              </Link>
-            </div>
-          )}
-
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`p-2 rounded-lg transition-colors ${
-                transparent
-                  ? 'text-white hover:bg-white/10'
-                  : 'text-white hover:bg-white/10'
+        <nav className="hidden md:flex items-center gap-1" aria-label="Main">
+          {navigation.map((item) => (
+            <Link
+              key={item.name}
+              to={item.href}
+              aria-current={pathname === item.href ? 'page' : undefined}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                pathname === item.href ? 'text-white bg-white/10' : 'text-gray-300 hover:text-white hover:bg-white/5'
               }`}
             >
-              {mobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
-          </div>
-        </div>
+              {item.name}
+            </Link>
+          ))}
+        </nav>
 
-        {/* Mobile menu */}
-        {mobileMenuOpen && (
-          <div className={`md:hidden ${
-            transparent ? 'bg-white/10 backdrop-blur-md' : 'bg-blue-700'
-          } border-t ${
-            transparent ? 'border-white/20' : 'border-blue-800'
-          }`}>
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                    isActive(item.href)
-                      ? transparent
-                        ? 'text-white bg-white/20'
-                        : 'text-white font-semibold bg-white/10'
-                      : transparent
-                        ? 'text-white/90 hover:text-white hover:bg-white/10'
-                        : 'text-white/90 hover:text-white hover:bg-white/10'
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
-              
-              {showAuthButtons && (
-                <>
-                  <div className={`border-t ${transparent ? 'border-white/20' : 'border-white/20'} my-2`}></div>
-                  <Link
-                    to="/login"
-                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                      transparent
-                        ? 'text-white/90 hover:text-white hover:bg-white/10'
-                        : 'text-white/90 hover:text-white hover:bg-white/10'
-                    }`}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="block px-3 py-2 rounded-md text-base font-medium text-blue-600 bg-white hover:bg-gray-100 transition-all duration-200"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Get Started
-                  </Link>
-                </>
-              )}
-            </div>
+        {showAuthButtons && (
+          <div className="hidden md:flex items-center gap-3">
+            <Link to="/login" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">
+              Sign in
+            </Link>
+            <Link
+              to="/register"
+              className="px-4 py-2 text-sm font-semibold text-white rounded-lg bg-gradient-to-r from-cyan-500 to-violet-600 shadow-lg shadow-cyan-500/25 hover:brightness-110 transition"
+            >
+              Get started
+            </Link>
           </div>
         )}
+
+        <button
+          className="md:hidden p-2 rounded-lg text-white hover:bg-white/10"
+          onClick={() => setOpen(!open)}
+          aria-label={open ? 'Close menu' : 'Open menu'}
+          aria-expanded={open}
+        >
+          {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
       </div>
+
+      {open && (
+        <div className="md:hidden px-4 pb-4 space-y-1">
+          {navigation.map((item) => (
+            <Link key={item.name} to={item.href} onClick={() => setOpen(false)} className="block px-3 py-2.5 rounded-lg text-gray-200 hover:bg-white/10">
+              {item.name}
+            </Link>
+          ))}
+          {showAuthButtons && (
+            <div className="pt-2 flex gap-2">
+              <Link to="/login" onClick={() => setOpen(false)} className="flex-1 text-center px-4 py-2.5 rounded-lg border border-white/15 text-white">Sign in</Link>
+              <Link to="/register" onClick={() => setOpen(false)} className="flex-1 text-center px-4 py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-violet-600 text-white font-semibold">Get started</Link>
+            </div>
+          )}
+        </div>
+      )}
     </header>
+    </>
   )
 }
 

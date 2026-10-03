@@ -3,7 +3,7 @@ FROM node:18-alpine as build
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci --legacy-peer-deps
 COPY . .
 RUN npm run build
 
@@ -13,17 +13,7 @@ FROM nginx:alpine
 # Copy the build files
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Create nginx configuration
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    location / { \
-        root /usr/share/nginx/html; \
-        index index.html index.htm; \
-        try_files $uri $uri/ /index.html; \
-    } \
-    error_page 404 /index.html; \
-}' > /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

@@ -1,4 +1,6 @@
 const express = require('express');
+const crypto = require('crypto');
+const { limiters } = require('../middleware/security');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -20,8 +22,9 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'payment-' + uniqueSuffix + path.extname(file.originalname));
+    // Unguessable name; extension comes from the validated mimetype, never from user input
+    const ext = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'application/pdf': '.pdf' }[file.mimetype] || '';
+    cb(null, 'payment-' + crypto.randomBytes(16).toString('hex') + ext);
   }
 });
 
@@ -99,7 +102,38 @@ router.get('/qrcode', (req, res) => {
 });
 
 // Submit payment request (authenticated users)
-router.post('/submit', auth, upload.single('screenshot'), async (req, res) => {
+// Verify the real file type from its magic bytes — extension and mimetype are client-controlled
+const MAGIC = [
+  [0xff, 0xd8, 0xff], // jpeg
+  [0x89, 0x50, 0x4e, 0x47], // png
+  [0x47, 0x49, 0x46, 0x38], // gif
+  [0x25, 0x50, 0x44, 0x46], // pdf
+];
+const verifyFileSignature = (req, res, next) => {
+  if (!req.file) return next();
+  const head = Buffer.alloc(4);
+  const fd = fs.openSync(req.file.path, 'r');
+  fs.readSync(fd, head, 0, 4, 0);
+  fs.closeSync(fd);
+  if (!MAGIC.some((sig) => sig.every((b, i) => head[i] === b))) {
+    fs.unlink(req.file.path, () => {});
+    return res.status(400).json({ success: false, error: 'File content does not match an allowed type' });
+  }
+  next();
+};
+
+// Payment screenshots are private: only the admin or the user who uploaded one may fetch it
+router.get('/screenshot/:file', auth, async (req, res) => {
+  const file = path.basename(req.params.file);
+  if (!/^payment-[\w-]+\.(jpe?g|png|gif|pdf)$/i.test(file)) return res.status(400).json({ error: 'Invalid file' });
+  const payment = await Payment.findOne({ screenshotUrl: `/uploads/payments/${file}` }).select('user');
+  const isOwner = payment && String(payment.user) === String(req.user._id);
+  if (!payment || (!isOwner && req.user.role !== 'admin')) return res.status(404).json({ error: 'Not found' });
+  res.set('Cache-Control', 'private, no-store');
+  res.sendFile(path.join(uploadDir, file));
+});
+
+router.post('/submit', auth, limiters.upload, upload.single('screenshot'), verifyFileSignature, async (req, res) => {
   try {
     const { paymentMethod, transactionId, subscriptionType, notes } = req.body;
     const userId = req.user._id;

@@ -24,4 +24,6 @@ EXPOSE 5001
 
 USER node
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD wget -qO- http://localhost:5001/health || exit 1
+
 CMD ["npm", "start"]

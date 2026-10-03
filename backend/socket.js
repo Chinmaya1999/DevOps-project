@@ -1,6 +1,12 @@
 const Message = require('./models/Message');
 const Chat = require('./models/Chat');
 const User = require('./models/User');
+const CollaborationRequest = require('./models/CollaborationRequest');
+const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+
+const isId = (v) => mongoose.Types.ObjectId.isValid(v);
+const MAX_MESSAGE_LENGTH = 5000;
 
 let io;
 
@@ -14,18 +20,11 @@ const initializeSocket = (server) => {
   ];
   
   io = require('socket.io')(server, {
+    maxHttpBufferSize: 1e5, // 100 KB per event
     cors: {
       origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.indexOf(origin) !== -1) {
-          callback(null, true);
-        } else {
-          console.log('Socket.IO blocked origin:', origin);
-          // For development, allow all origins to troubleshoot
-          callback(null, true);
-        }
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+        callback(new Error('Not allowed by CORS'));
       },
       methods: ['GET', 'POST'],
       credentials: true
@@ -35,40 +34,65 @@ const initializeSocket = (server) => {
   // Store online users
   const onlineUsers = new Map();
 
+  // Authenticate every connection: identity comes from a verified JWT, never from client-supplied ids
+  io.use(async (socket, next) => {
+    try {
+      const token = socket.handshake.auth?.token;
+      if (!token) return next(new Error('Authentication required'));
+      const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
+      const user = await User.findById(decoded.userId).select('_id isActive passwordChangedAt');
+      if (!user || !user.isActive) return next(new Error('Authentication failed'));
+      if (user.passwordChangedAt && decoded.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) {
+        return next(new Error('Session expired'));
+      }
+      socket.userId = String(user._id);
+      next();
+    } catch (e) {
+      next(new Error('Authentication failed'));
+    }
+  });
+
+  // Only members of a chat may read from / write to its room
+  const getMemberChat = async (chatId, userId) => {
+    if (!isId(chatId)) return null;
+    const chat = await Chat.findById(chatId);
+    if (!chat || !chat.participants.some((p) => p.toString() === userId)) return null;
+    return chat;
+  };
+
   io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+    // simple per-socket flood protection
+    let budget = 30;
+    const refill = setInterval(() => { budget = 30; }, 10000);
+    socket.use((packet, next) => (budget-- > 0 ? next() : next(new Error('Rate limit exceeded'))));
 
     // User joins with their userId
-    socket.on('join', async (userId) => {
-      socket.userId = userId;
+    socket.on('join', async () => {
+      const userId = socket.userId; // ignore any id sent by the client
       onlineUsers.set(userId, socket.id);
-      
-      // Update user online status in database
-      await User.findByIdAndUpdate(userId, { 
-        isOnline: true,
-        lastSeen: new Date()
-      });
 
-      // Notify other users that this user is online
+      await User.findByIdAndUpdate(userId, { isOnline: true, lastSeen: new Date() });
       socket.broadcast.emit('user-online', { userId });
     });
 
     // Join a specific chat room
-    socket.on('join-chat', (chatId) => {
-      socket.join(chatId);
-      console.log(`User ${socket.userId} joined chat ${chatId}`);
+    socket.on('join-chat', async (chatId) => {
+      if (await getMemberChat(chatId, socket.userId)) socket.join(String(chatId));
     });
 
     // Leave a chat room
     socket.on('leave-chat', (chatId) => {
-      socket.leave(chatId);
-      console.log(`User ${socket.userId} left chat ${chatId}`);
+      socket.leave(String(chatId));
     });
 
     // Send message
     socket.on('send-message', async (data) => {
       try {
-        const { chatId, content, messageType, fileUrl, fileName, fileSize, isQuestion } = data;
+        const { chatId, content, messageType, fileUrl, fileName, fileSize, isQuestion } = data || {};
+        if (typeof content !== 'string' || content.length > MAX_MESSAGE_LENGTH) return;
+        // fileUrl must point at our own uploads — block javascript:/external URLs injected by a client
+        if (fileUrl && !/^\/uploads\/[\w./-]+$/.test(String(fileUrl))) return;
+        if (!(await getMemberChat(chatId, socket.userId))) return;
 
         const message = new Message({
           chat: chatId,
@@ -128,9 +152,9 @@ const initializeSocket = (server) => {
     // Mark messages as read
     socket.on('mark-read', async (data) => {
       try {
-        const { chatId } = data;
+        const { chatId } = data || {};
 
-        const chat = await Chat.findById(chatId);
+        const chat = await getMemberChat(chatId, socket.userId);
         if (chat) {
           chat.unreadCount.set(socket.userId, 0);
           await chat.save();
@@ -155,16 +179,18 @@ const initializeSocket = (server) => {
 
     // Typing indicator
     socket.on('typing', (data) => {
-      const { chatId } = data;
-      socket.to(chatId).emit('user-typing', {
+      const { chatId } = data || {};
+      if (!socket.rooms.has(String(chatId))) return;
+      socket.to(String(chatId)).emit('user-typing', {
         userId: socket.userId,
         chatId
       });
     });
 
     socket.on('stop-typing', (data) => {
-      const { chatId } = data;
-      socket.to(chatId).emit('user-stop-typing', {
+      const { chatId } = data || {};
+      if (!socket.rooms.has(String(chatId))) return;
+      socket.to(String(chatId)).emit('user-stop-typing', {
         userId: socket.userId,
         chatId
       });
@@ -173,12 +199,14 @@ const initializeSocket = (server) => {
     // Question solved
     socket.on('question-solved', async (data) => {
       try {
-        const { messageId, solverId } = data;
-        
+        const { messageId } = data || {};
+        if (!isId(messageId)) return;
+
         const message = await Message.findById(messageId);
-        if (message) {
+        // Only a member of the chat can mark it solved, and the solver is always the authenticated user
+        if (message && (await getMemberChat(message.chat, socket.userId))) {
           message.isSolved = true;
-          message.solvedBy = solverId;
+          message.solvedBy = socket.userId;
           message.solvedAt = new Date();
           await message.save();
           await message.populate('solvedBy', 'username avatar');
@@ -194,11 +222,14 @@ const initializeSocket = (server) => {
     // Collaboration request sent
     socket.on('collaboration-request', async (data) => {
       try {
-        const { toUserId, request } = data;
+        const { toUserId } = data || {};
+        if (!isId(toUserId)) return;
+        // Relay the stored request, not client-supplied content
+        const stored = await CollaborationRequest.findOne({ from: socket.userId, to: toUserId, status: 'pending' })
+          .sort({ createdAt: -1 }).populate('from', 'username avatar');
         const recipientSocketId = onlineUsers.get(toUserId);
-        
-        if (recipientSocketId) {
-          io.to(recipientSocketId).emit('new-collaboration-request', request);
+        if (stored && recipientSocketId) {
+          io.to(recipientSocketId).emit('new-collaboration-request', stored);
         }
       } catch (error) {
         console.error('Error handling collaboration request:', error);
@@ -208,9 +239,9 @@ const initializeSocket = (server) => {
     // Collaboration request accepted
     socket.on('collaboration-accepted', async (data) => {
       try {
-        const { fromUserId, chat } = data;
+        const { fromUserId, chat } = data || {};
+        if (!isId(fromUserId) || !chat || !(await getMemberChat(chat._id, socket.userId))) return;
         const senderSocketId = onlineUsers.get(fromUserId);
-        
         if (senderSocketId) {
           io.to(senderSocketId).emit('collaboration-accepted', chat);
         }
@@ -221,7 +252,7 @@ const initializeSocket = (server) => {
 
     // Disconnect
     socket.on('disconnect', async () => {
-      console.log('User disconnected:', socket.id);
+      clearInterval(refill);
       
       if (socket.userId) {
         onlineUsers.delete(socket.userId);

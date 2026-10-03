@@ -7,7 +7,7 @@ const deploymentSchema = Joi.object({
   host: Joi.string().ip().required(),
   username: Joi.string().required(),
   pemKey: Joi.string().required(),
-  projectName: Joi.string().required(),
+  projectName: Joi.string().pattern(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,62}$/).required().messages({'string.pattern.base': 'projectName may only contain letters, numbers, - and _'}),
   deploymentScope: Joi.string().valid('both', 'frontend', 'backend').default('both'),
   backendImage: Joi.string().when('deploymentScope', {
     is: Joi.string().valid('both', 'backend'),

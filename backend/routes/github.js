@@ -1,5 +1,12 @@
 const express = require('express');
+const { tokenFromHeaders } = require('../middleware/security');
+
 const router = express.Router();
+router.use(tokenFromHeaders);
+
+// owner/repo end up inside upstream GitHub API URLs — only allow valid GitHub names
+router.param('owner', (req, res, next, v) => (/^[A-Za-z0-9_.-]{1,100}$/.test(v) && v !== '..' ? next() : res.status(400).json({ error: 'Invalid owner' })));
+router.param('repo', (req, res, next, v) => (/^[A-Za-z0-9_.-]{1,100}$/.test(v) && v !== '..' ? next() : res.status(400).json({ error: 'Invalid repository' })));
 const githubIntegration = require('../services/githubIntegration');
 const { auth } = require('../middleware/auth');
 

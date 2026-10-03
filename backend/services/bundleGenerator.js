@@ -1,0 +1,227 @@
+/**
+ * Generates a ready-to-commit "full stack" DevOps bundle for one app:
+ * Dockerfile, docker-compose, GitHub Actions CI/CD, Kubernetes manifests and a README.
+ * Pure functions: input is validated by the caller (see utils/validators.js).
+ */
+
+const RUNTIMES = {
+  node: {
+    label: 'Node.js',
+    dockerfile: (p) => `# syntax=docker/dockerfile:1
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production PORT=${p}
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+USER node
+EXPOSE ${p}
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s CMD wget -qO- http://localhost:${p}/health || exit 1
+CMD ["node", "server.js"]
+`,
+    test: ['npm ci', 'npm test --if-present'],
+  },
+  python: {
+    label: 'Python',
+    dockerfile: (p) => `# syntax=docker/dockerfile:1
+FROM python:3.12-slim
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PORT=${p}
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN useradd -m app && chown -R app /app
+USER app
+EXPOSE ${p}
+HEALTHCHECK --interval=30s --timeout=3s CMD python -c "import urllib.request;urllib.request.urlopen('http://localhost:${p}/health')" || exit 1
+CMD ["python", "app.py"]
+`,
+    test: ['pip install -r requirements.txt', 'pytest || true'],
+  },
+  go: {
+    label: 'Go',
+    dockerfile: (p) => `# syntax=docker/dockerfile:1
+FROM golang:1.22-alpine AS build
+WORKDIR /src
+COPY go.* ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -o /out/app ./...
+
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=build /out/app /app
+ENV PORT=${p}
+EXPOSE ${p}
+ENTRYPOINT ["/app"]
+`,
+    test: ['go test ./...'],
+  },
+  static: {
+    label: 'Static site (nginx)',
+    dockerfile: (p) => `FROM nginx:alpine
+COPY . /usr/share/nginx/html
+EXPOSE 80
+`,
+    test: ['echo "no tests for static sites"'],
+  },
+};
+
+
+function compose({ appName, port, runtime }) {
+  const inner = runtime === 'static' ? 80 : port;
+  return `services:
+  ${appName}:
+    build: .
+    image: ${appName}:latest
+    ports:
+      - "${port}:${inner}"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+`;
+}
+
+function githubActions({ appName, runtime, dockerHubUser }) {
+  const steps = RUNTIMES[runtime].test.map((c) => `      - run: ${c}`).join('\n');
+  return `name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+${steps}
+
+  image:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: \${{ secrets.DOCKER_USERNAME }}
+          password: \${{ secrets.DOCKER_PASSWORD }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${dockerHubUser}/${appName}:latest
+            ${dockerHubUser}/${appName}:\${{ github.sha }}
+      - name: Scan image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${dockerHubUser}/${appName}:\${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+`;
+}
+
+function k8s({ appName, port, runtime, replicas, dockerHubUser }) {
+  const inner = runtime === 'static' ? 80 : port;
+  return `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${appName}
+  labels: { app: ${appName} }
+spec:
+  replicas: ${replicas}
+  selector:
+    matchLabels: { app: ${appName} }
+  template:
+    metadata:
+      labels: { app: ${appName} }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: ${appName}
+          image: ${dockerHubUser}/${appName}:latest
+          ports:
+            - containerPort: ${inner}
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          readinessProbe:
+            httpGet: { path: /health, port: ${inner} }
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: ${inner} }
+            initialDelaySeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${appName}
+spec:
+  selector: { app: ${appName} }
+  ports:
+    - port: 80
+      targetPort: ${inner}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ${appName}
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: ${appName} }
+  minReplicas: ${replicas}
+  maxReplicas: ${replicas * 4}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }
+`;
+}
+
+function readme(cfg) {
+  return `# ${cfg.appName}
+
+Generated by AutoDevOps (${RUNTIMES[cfg.runtime].label}).
+
+| File | Purpose |
+|------|---------|
+| Dockerfile | Hardened, non-root image with healthcheck |
+| docker-compose.yml | Local / single-server run: \`docker compose up -d\` |
+| .github/workflows/ci-cd.yml | Test, build, push and scan on every push to main |
+| k8s/app.yaml | Deployment, Service and HPA: \`kubectl apply -f k8s/\` |
+
+## Before you push
+1. Add repo secrets \`DOCKER_USERNAME\` and \`DOCKER_PASSWORD\`.
+2. Make sure your app answers \`GET /health\` with HTTP 200.
+3. Review resource limits in \`k8s/app.yaml\` for your workload.
+`;
+}
+
+class BundleGenerator {
+  /** @returns {{path: string, content: string}[]} */
+  static generate(cfg) {
+    const rt = RUNTIMES[cfg.runtime];
+    return [
+      { path: 'Dockerfile', content: rt.dockerfile(cfg.port) },
+      { path: 'docker-compose.yml', content: compose(cfg) },
+      { path: '.github/workflows/ci-cd.yml', content: githubActions(cfg) },
+      { path: 'k8s/app.yaml', content: k8s(cfg) },
+      { path: '.dockerignore', content: 'node_modules\n.git\n.env\n*.log\n' },
+      { path: 'README.md', content: readme(cfg) },
+    ];
+  }
+}
+
+BundleGenerator.RUNTIMES = Object.keys(RUNTIMES);
+module.exports = BundleGenerator;
