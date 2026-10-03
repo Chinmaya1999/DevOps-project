@@ -148,7 +148,7 @@ jobs:
           rm env.prod
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.5
         env:
           ENV_B64: ${{ env.ENV_B64 }}
           GHCR_USER: ${{ github.actor }}
