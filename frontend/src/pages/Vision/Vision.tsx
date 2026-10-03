@@ -858,7 +858,6 @@ const Vision: React.FC = () => {
             <span>Vision - One-Click Deployment</span>
           </Space>
         }
-        extra={<Tag color="blue">Beta</Tag>}
       >
         <Alert
           title="Fill in the server details, choose the Docker images, and deploy to AWS EC2"
