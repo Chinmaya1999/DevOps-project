@@ -165,7 +165,7 @@ guard('password reset: weak passwords rejected, token is single-use, old session
   const common = await call('/api/auth/reset-password', { method: 'POST', ip, body: { token, password: 'password123', confirmPassword: 'password123' } });
   assert.strictEqual(common.status, 400);
 
-  await new Promise((r) => setTimeout(r, 1100)); // JWT iat has 1-second resolution
+  // no waiting: even a session created in the same second as the reset must be revoked
   const ok = await call('/api/auth/reset-password', { method: 'POST', ip, body: { token, password: 'N3wStr0ngPassw0rd', confirmPassword: 'N3wStr0ngPassw0rd' } });
   assert.strictEqual(ok.status, 200);
 

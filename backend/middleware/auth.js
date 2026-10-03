@@ -30,7 +30,7 @@ const auth = async (req, res, next) => {
     }
 
     // Sessions issued before the last password change/reset are no longer valid
-    if (user.passwordChangedAt && decoded.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) {
+    if (user.passwordChangedAt && decoded.iat <= Math.floor(user.passwordChangedAt.getTime() / 1000)) {
       return res.status(401).json({ error: 'Session expired. Please log in again.' });
     }
 

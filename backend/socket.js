@@ -53,7 +53,7 @@ const initializeSocket = (server) => {
       if (decoded.purpose) return next(new Error('Authentication failed'));
       const user = await User.findById(decoded.userId).select('_id isActive passwordChangedAt');
       if (!user || !user.isActive) return next(new Error('Authentication failed'));
-      if (user.passwordChangedAt && decoded.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) {
+      if (user.passwordChangedAt && decoded.iat <= Math.floor(user.passwordChangedAt.getTime() / 1000)) {
         return next(new Error('Session expired'));
       }
       socket.userId = String(user._id);

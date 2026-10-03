@@ -156,8 +156,9 @@ userSchema.pre('save', async function(next) {
   try {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
-    // Invalidate every JWT issued before this moment (new users: harmless; resets/changes: logs out old sessions)
-    this.passwordChangedAt = new Date(Date.now() - 1000);
+    // A password CHANGE or RESET invalidates every session issued up to this moment.
+    // (A brand-new account has no earlier sessions, so nothing is stamped on creation.)
+    if (!this.isNew) this.passwordChangedAt = new Date();
     next();
   } catch (error) {
     next(error);
