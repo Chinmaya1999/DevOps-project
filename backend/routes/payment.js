@@ -5,6 +5,7 @@ const cashfree = require('../services/cashfreeService');
 const { reconcileOrder } = require('../services/paymentActivation');
 const { ensureInvoiceNumber, buildInvoice } = require('../services/invoicing');
 const refunds = require('../services/refunds');
+const { recordAudit } = require('../services/audit');
 const { PLANS, PRICING, DURATION_DAYS, getEffectivePlan, extendSubscription, priceFor } = require('../services/plans');
 const multer = require('multer');
 const path = require('path');
@@ -267,6 +268,7 @@ router.post('/:id/refund', auth, adminAuth, async (req, res) => {
   try {
     const r = await refunds.executeRefund(req.params.id, req.user._id, req.body?.note);
     if (r.error) return res.status(r.status).json({ success: false, error: r.error });
+    await recordAudit(req, 'payment.refund', { targetType: 'payment', targetId: req.params.id, targetLabel: r.payment.invoiceNumber || r.payment.paymentNumber, details: { amount: r.payment.amount, status: r.payment.refund && r.payment.refund.status } });
     res.json({ success: true, data: r.payment, message: 'Refund initiated and the subscription period was removed' });
   } catch (e) {
     console.error('Refund error:', e.message);
@@ -361,6 +363,7 @@ router.put('/verify/:paymentId', auth, adminAuth, async (req, res) => {
 
     await payment.save();
     if (action === 'approve') await ensureInvoiceNumber(payment._id);
+    await recordAudit(req, action === 'approve' ? 'payment.approve' : 'payment.reject', { targetType: 'payment', targetId: payment._id, targetLabel: payment.paymentNumber, details: { amount: payment.amount } });
 
     res.json({
       success: true,

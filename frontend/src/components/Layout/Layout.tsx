@@ -272,8 +272,7 @@ const Layout: React.FC = () => {
   const visibleNav = navigation.filter((i) => !(i.href === '/payment' && isPro))
 
   const adminNavigation = [
-    { name: 'Admin', href: '/admin', icon: Settings },
-    { name: 'Payment Verification', href: '/admin/payments', icon: CreditCard },
+    { name: 'Admin panel', href: '/admin', icon: Settings },
 
   ]
 

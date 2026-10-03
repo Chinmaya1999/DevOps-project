@@ -5,7 +5,7 @@ const Message = require('../models/Message');
 const CollaborationRequest = require('../models/CollaborationRequest');
 const UserPoints = require('../models/UserPoints');
 const User = require('../models/User');
-const { auth } = require('../middleware/auth');
+const { auth, adminAuth } = require('../middleware/auth');
 
 // Get all users for collaboration
 router.get('/users', auth, async (req, res) => {
@@ -454,7 +454,7 @@ router.get('/leaderboard', auth, async (req, res) => {
 });
 
 // Admin: Get chat statistics
-router.get('/admin/stats', auth, async (req, res) => {
+router.get('/admin/stats', auth, adminAuth, async (req, res) => {
   try {
     // Check if user is admin
     if (req.user.role !== 'admin') {

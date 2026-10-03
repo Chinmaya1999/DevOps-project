@@ -16,7 +16,7 @@ const {
   adminToggleFeatured,
   upload
 } = require('../controllers/blogController');
-const { auth } = require('../middleware/auth');
+const { auth, adminAuth } = require('../middleware/auth');
 
 // Public routes
 router.get('/', getAllBlogs);
@@ -34,7 +34,7 @@ router.post('/:id/comments', auth, addComment);
 router.delete('/:blogId/comments/:commentId', auth, deleteComment);
 
 // Admin routes
-router.get('/admin/all', auth, adminGetAllBlogs);
-router.put('/admin/:id/featured', auth, adminToggleFeatured);
+router.get('/admin/all', auth, adminAuth, adminGetAllBlogs);
+router.put('/admin/:id/featured', auth, adminAuth, adminToggleFeatured);
 
 module.exports = router;

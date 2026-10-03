@@ -32,6 +32,11 @@ const VisionSuccess = lazy(() => import('./pages/Vision/VisionSuccess'))
 const Deployments = lazy(() => import('./pages/Deployments/Deployments'))
 const Payment = lazy(() => import('./pages/Payment/Payment'))
 const PaymentStatus = lazy(() => import('./pages/Payment/PaymentStatus'))
+const AdminShell = lazy(() => import('./pages/Admin/AdminShell'))
+const AdminOverview = lazy(() => import('./pages/Admin/AdminOverview'))
+const AdminUsers = lazy(() => import('./pages/Admin/AdminUsers'))
+const AdminMessages = lazy(() => import('./pages/Admin/AdminMessages'))
+const AdminAudit = lazy(() => import('./pages/Admin/AdminAudit'))
 const PaymentVerification = lazy(() => import('./pages/Admin/PaymentVerification'))
 const Contact = lazy(() => import('./pages/Contact/Contact'))
 const CloudCostAnalysis = lazy(() => import('./components/CloudCostAnalysis'))
@@ -97,7 +102,15 @@ function App() {
         <Route path="devops-docs/:id" element={<DevOpsDocDetail />} />
         <Route path="roadmap" element={<Roadmap />} />
         <Route path="resources/:type/:id" element={<ResourceDetail />} />
-        <Route path="admin" element={<Admin />} />
+        {/* Admin area: only role "admin" gets in; everyone else is sent to their dashboard */}
+        <Route path="admin" element={user.role === 'admin' ? <AdminShell /> : <Navigate to="/dashboard" replace />}>
+          <Route index element={<AdminOverview />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="payments" element={<PaymentVerification />} />
+          <Route path="content" element={<Admin />} />
+          <Route path="messages" element={<AdminMessages />} />
+          <Route path="audit" element={<AdminAudit />} />
+        </Route>
         <Route path="learn" element={<LearnHub />} />
         <Route path="learn/:slug" element={<GuideView />} />
         <Route path="help" element={<Help />} />
@@ -114,7 +127,6 @@ function App() {
         <Route path="deployments" element={<Deployments />} />
         <Route path="payment" element={<Payment />} />
         <Route path="payment/status" element={<PaymentStatus />} />
-        <Route path="admin/payments" element={<PaymentVerification />} />
         <Route path="blogs" element={<BlogList />} />
         <Route path="blogs/create" element={<CreateBlog />} />
         <Route path="blogs/:id" element={<BlogDetail />} />

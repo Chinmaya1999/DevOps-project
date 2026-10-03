@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const User = require('../models/User');
 const { registerSchema, loginSchema } = require('../utils/validators');
@@ -13,20 +12,13 @@ const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 const MAX_OTP_ATTEMPTS = 5;
 
-// Configure email transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
-    pass: process.env.EMAIL_PASSWORD || 'hgxa fqzv pqed oaxu'
-  }
-});
+const { transporter } = require('../services/mailer');
 
 // Send welcome email
 const sendWelcomeEmail = async (email, username) => {
   try {
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
+      from: process.env.EMAIL_USER,
       to: email,
       subject: 'Welcome to DeployDojo - Your DevOps Journey Starts Here! 🚀',
       html: `
@@ -117,7 +109,7 @@ const generateOTP = () => secureOTP();
 const sendOTPEmail = async (email, username, otp) => {
   try {
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
+      from: process.env.EMAIL_USER,
       to: email,
       subject: 'Verify Your Email - DeployDojo OTP',
       html: `
@@ -177,7 +169,7 @@ const sendVerificationEmail = async (email, username, token) => {
   try {
     const verificationUrl = `https://cmcloud.online/verify-email?token=${token}`;
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
+      from: process.env.EMAIL_USER,
       to: email,
       subject: 'Verify Your Email - DeployDojo',
       html: `
@@ -681,7 +673,7 @@ const forgotPassword = async (req, res) => {
     // Send password reset email
     const resetUrl = `https://cmcloud.online/reset-password?token=${resetToken}`;
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'autodevops.cmcloud.online@gmail.com',
+      from: process.env.EMAIL_USER,
       to: email,
       subject: 'Reset Your Password - DeployDojo',
       html: `

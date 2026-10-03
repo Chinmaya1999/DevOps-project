@@ -47,6 +47,7 @@ const limiters = {
   passwordReset: limiter(5, 15, 'Too many password reset attempts. Please try again later.'),
   deployment: limiter(30, 15, 'Too many deployment requests. Please slow down.'),
   twoFactor: limiter(15, 15, 'Too many two-factor attempts. Please try again later.'),
+  contact: limiter(5, 60, 'Too many messages sent. Please try again later.'),
   upload: limiter(10, 60, 'Too many uploads. Please try again later.'),
   // authenticated route: limit per account so users sharing an IP don't block each other
   checkout: limiter(10, 15, 'Too many checkout attempts. Please try again later.', (req) => String(req.user?._id || req.ip)),
