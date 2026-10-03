@@ -5,6 +5,7 @@ const { auth, adminAuth } = require('../middleware/auth');
 const { escapeRegex, passwordProblem } = require('../middleware/security');
 const { getEffectivePlan, DURATION_DAYS } = require('../services/plans');
 const { recordAudit } = require('../services/audit');
+const { getPricing, setPricing, validatePricing, PRICE_MIN, PRICE_MAX } = require('../services/settings');
 const { deleteUserCascade } = require('../services/userCleanup');
 const User = require('../models/User');
 const Payment = require('../models/Payment');
@@ -332,6 +333,26 @@ router.delete('/users/:id', async (req, res) => {
     console.error('Delete user error:', e.message);
     fail(res, 500, 'Failed to delete user');
   }
+});
+
+// ---------------------------------------------------------------------------------------------
+// Settings: subscription prices
+// ---------------------------------------------------------------------------------------------
+router.get('/settings/pricing', async (req, res) => {
+  const pricing = await getPricing();
+  res.json({ success: true, data: { ...pricing, currency: 'INR', min: PRICE_MIN, max: PRICE_MAX } });
+});
+
+// New prices apply to payments started AFTER the change. Existing subscribers, open checkouts and past
+// invoices keep the amount they were charged.
+router.put('/settings/pricing', async (req, res) => {
+  const { monthly, yearly } = req.body || {};
+  const problem = validatePricing({ monthly, yearly });
+  if (problem) return fail(res, 400, problem);
+  const before = await getPricing();
+  const after = await setPricing({ monthly, yearly }, req.user._id);
+  await recordAudit(req, 'settings.pricing.update', { targetType: 'settings', targetLabel: 'subscription prices', details: { monthly: [before.monthly, after.monthly], yearly: [before.yearly, after.yearly] } });
+  res.json({ success: true, data: { ...after, currency: 'INR' } });
 });
 
 // ---------------------------------------------------------------------------------------------

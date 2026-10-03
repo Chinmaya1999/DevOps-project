@@ -84,7 +84,11 @@ const PaymentVerification: React.FC = () => {
       const response = await api.get('/payment/all', {
         params: filter !== 'all' ? { status: filter } : {}
       });
-      setPayments(response.data.data);
+      // A payment can outlive its user (payment records are kept when an account is deleted): never assume .user exists
+      setPayments((response.data.data as any[]).map((p) => ({
+        ...p,
+        user: p.user || { _id: '', username: 'Deleted user', email: '(account deleted)' },
+      })));
     } catch (error) {
       console.error('Failed to fetch payments:', error);
     } finally {
@@ -102,6 +106,7 @@ const PaymentVerification: React.FC = () => {
   };
 
   const fetchUserSubscription = async (userId: string) => {
+    if (!userId) { setUserSubscription(null); return; }
     try {
       const response = await api.get(`/admin/users/${userId}`);
       setUserSubscription(response.data.data);
@@ -111,21 +116,15 @@ const PaymentVerification: React.FC = () => {
   };
 
   const handleMakePremium = async (userId: string) => {
+    if (!userId) return;
     try {
-      await api.put(`/admin/users/${userId}`, {
-        subscription: {
-          type: 'premium',
-          startDate: new Date().toISOString(),
-          endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-          subscriptionType: 'yearly'
-        }
-      });
-      alert('User upgraded to premium successfully');
+      await api.post(`/admin/users/${userId}/plan`, { action: 'grant', days: 365 });
+      alert('Pro access granted for 365 days');
       if (selectedPayment) {
         fetchUserSubscription(selectedPayment.user._id);
       }
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to upgrade user to premium');
+      alert(error.response?.data?.error || 'Failed to grant Pro');
     }
   };
 

@@ -37,7 +37,7 @@ const AdminOverview = lazy(() => import('./pages/Admin/AdminOverview'))
 const AdminUsers = lazy(() => import('./pages/Admin/AdminUsers'))
 const AdminMessages = lazy(() => import('./pages/Admin/AdminMessages'))
 const AdminAudit = lazy(() => import('./pages/Admin/AdminAudit'))
-const PaymentVerification = lazy(() => import('./pages/Admin/PaymentVerification'))
+const AdminPayments = lazy(() => import('./pages/Admin/AdminPayments'))
 const Contact = lazy(() => import('./pages/Contact/Contact'))
 const CloudCostAnalysis = lazy(() => import('./components/CloudCostAnalysis'))
 const Features = lazy(() => import('./pages/Features/Features'))
@@ -106,7 +106,7 @@ function App() {
         <Route path="admin" element={user.role === 'admin' ? <AdminShell /> : <Navigate to="/dashboard" replace />}>
           <Route index element={<AdminOverview />} />
           <Route path="users" element={<AdminUsers />} />
-          <Route path="payments" element={<PaymentVerification />} />
+          <Route path="payments" element={<AdminPayments />} />
           <Route path="content" element={<Admin />} />
           <Route path="messages" element={<AdminMessages />} />
           <Route path="audit" element={<AdminAudit />} />

@@ -6,7 +6,8 @@ const { reconcileOrder } = require('../services/paymentActivation');
 const { ensureInvoiceNumber, buildInvoice } = require('../services/invoicing');
 const refunds = require('../services/refunds');
 const { recordAudit } = require('../services/audit');
-const { PLANS, PRICING, DURATION_DAYS, getEffectivePlan, extendSubscription, priceFor } = require('../services/plans');
+const { PLANS, DURATION_DAYS, getEffectivePlan, extendSubscription } = require('../services/plans');
+const { getPricing } = require('../services/settings');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -53,12 +54,12 @@ const upload = multer({
 });
 
 // Public pricing for the pricing page (no personal/bank details are ever exposed)
-router.get('/pricing', (req, res) => {
+router.get('/pricing', async (req, res) => {
   res.json({
     success: true,
     data: {
       currency: 'INR',
-      pricing: PRICING,
+      pricing: await getPricing(),
       plans: {
         free: { generationsPerMonth: PLANS.free.generationsPerMonth, features: PLANS.free.features },
         pro: { features: PLANS.pro.features },
@@ -174,7 +175,7 @@ router.post('/submit', auth, limiters.upload, upload.single('screenshot'), verif
     }
 
     // Calculate amount based on subscription type
-    const amount = priceFor(subscriptionType);
+    const amount = (await getPricing())[subscriptionType];
 
     // Create payment record
     const payment = new Payment({
@@ -417,11 +418,11 @@ router.get('/stats', auth, adminAuth, async (req, res) => {
 // ---------------------------------------------------------------------------
 
 // Plans, prices and what the signed-in user currently has
-router.get('/plans', auth, (req, res) => {
+router.get('/plans', auth, async (req, res) => {
   res.json({
     success: true,
     data: {
-      pricing: PRICING,
+      pricing: await getPricing(),
       current: getEffectivePlan(req.user),
       gatewayEnabled: cashfree.isConfigured(),
     },
@@ -457,7 +458,7 @@ router.post('/cashfree/order', auth, limiters.checkout, async (req, res) => {
       { $set: { status: 'cancelled' } }
     );
 
-    const amount = priceFor(subscriptionType);
+    const amount = (await getPricing())[subscriptionType];
     const orderId = 'ord_' + crypto.randomBytes(12).toString('hex');
     const payment = await Payment.create({
       user: req.user._id,

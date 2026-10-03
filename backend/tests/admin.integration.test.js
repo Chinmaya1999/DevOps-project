@@ -58,7 +58,7 @@ guard('every admin endpoint refuses anonymous visitors (401) and normal users (4
     ['GET', '/api/admin/overview'], ['GET', '/api/admin/dashboard'], ['GET', '/api/admin/users'], ['GET', '/api/admin/users/stats'],
     ['GET', `/api/admin/users/${id}`], ['POST', '/api/admin/users'], ['PUT', `/api/admin/users/${id}`], ['DELETE', `/api/admin/users/${id}`],
     ['POST', `/api/admin/users/${id}/plan`], ['POST', `/api/admin/users/${id}/verify-email`], ['POST', `/api/admin/users/${id}/force-logout`],
-    ['POST', `/api/admin/users/${id}/reset-2fa`], ['POST', `/api/admin/users/${id}/unlock`], ['GET', '/api/admin/audit'], ['GET', '/api/admin/messages'],
+    ['POST', `/api/admin/users/${id}/reset-2fa`], ['POST', `/api/admin/users/${id}/unlock`], ['GET', '/api/admin/audit'], ['GET', '/api/admin/messages'], ['GET', '/api/admin/settings/pricing'], ['PUT', '/api/admin/settings/pricing'],
     ['PATCH', `/api/admin/messages/${id}`], ['DELETE', `/api/admin/messages/${id}`], ['GET', '/api/admin/docs'], ['POST', '/api/admin/docs'],
     ['GET', '/api/blogs/admin/all'], ['PUT', `/api/blogs/admin/${id}/featured`], ['GET', '/api/chat/admin/stats'],
     ['GET', '/api/payment/all'], ['PUT', `/api/payment/verify/${id}`], ['POST', `/api/payment/${id}/refund`], ['GET', '/api/payment/stats'],
@@ -235,4 +235,50 @@ guard('the audit log lists actions newest-first, filters, and has no way to edit
   const id = all.json.data[0]._id;
   assert.strictEqual((await call(`/api/admin/audit/${id}`, { method: 'DELETE', token: admin.token })).status, 404);
   assert.strictEqual((await call(`/api/admin/audit/${id}`, { method: 'PUT', token: admin.token, body: { action: 'x' } })).status, 404);
+});
+
+guard('prices: only admins can change them; bad values are refused; new orders use the new price, old ones keep theirs; audited', async () => {
+  const cashfree = require('../services/cashfreeService');
+  const Setting = require('../models/Setting');
+  const { clearSettingsCache } = require('../services/settings');
+  process.env.CASHFREE_APP_ID = 'id'; process.env.CASHFREE_SECRET_KEY = 'secret'; process.env.CASHFREE_ENV = 'sandbox';
+  const created = [];
+  cashfree.http = { post: async (url, body) => { created.push(body); return { data: { order_id: body.order_id, payment_session_id: 's_' + body.order_id } }; }, get: async () => ({ data: {} }) };
+  await Setting.deleteMany({}); clearSettingsCache();
+
+  const admin = await mk('pricer', { role: 'admin' });
+  const buyer = await mk('buyer_p');
+  const put = (body, token = admin.token) => call('/api/admin/settings/pricing', { method: 'PUT', token, body });
+  const order = (type) => call('/api/payment/cashfree/order', { method: 'POST', token: buyer.token, body: { subscriptionType: type, phone: '9876543210' } });
+
+  assert.deepStrictEqual((await call('/api/admin/settings/pricing', { token: admin.token })).json.data.monthly, 199, 'defaults before any change');
+  assert.strictEqual((await put({ monthly: 299, yearly: 2990 }, buyer.token)).status, 403, 'a normal user cannot change prices');
+  for (const bad of [{ monthly: 0, yearly: 100 }, { monthly: -5, yearly: 100 }, { monthly: 1.5, yearly: 100 }, { monthly: '299', yearly: 2990 },
+    { monthly: 299, yearly: 100 }, { monthly: 100001, yearly: 100001 }, { monthly: 299 }, {}, { monthly: null, yearly: null }]) {
+    assert.strictEqual((await put(bad)).status, 400, JSON.stringify(bad));
+  }
+  assert.strictEqual((await call('/api/payment/pricing')).json.data.pricing.monthly, 199, 'nothing changed by the rejected attempts');
+
+  const before = await order('monthly');
+  assert.strictEqual(created.at(-1).order_amount, 199);
+
+  const ok = await put({ monthly: 249, yearly: 2490 });
+  assert.strictEqual(ok.status, 200);
+  assert.deepStrictEqual([ok.json.data.monthly, ok.json.data.yearly], [249, 2490]);
+
+  // public pricing and the signed-in plans view both show the new numbers immediately
+  assert.deepStrictEqual((await call('/api/payment/pricing')).json.data.pricing, { monthly: 249, yearly: 2490 });
+  assert.strictEqual((await call('/api/payment/plans', { token: buyer.token })).json.data.pricing.yearly, 2490);
+
+  // a NEW order is charged the new price; the amount is still decided by the server, never the client
+  await call('/api/payment/cashfree/order', { method: 'POST', token: buyer.token, body: { subscriptionType: 'yearly', phone: '9876543210', amount: 1 } });
+  assert.strictEqual(created.at(-1).order_amount, 2490);
+  // the order created BEFORE the change keeps the price it was created with
+  const oldPayment = await Payment.findOne({ gatewayOrderId: before.json.data.orderId });
+  assert.strictEqual(oldPayment.amount, 199);
+
+  const log = await AuditLog.findOne({ action: 'settings.pricing.update' });
+  assert.ok(log && log.actorEmail === 'pricer@example.com');
+  assert.deepStrictEqual(log.details.monthly, [199, 249]);
+  await Setting.deleteMany({}); clearSettingsCache();
 });
