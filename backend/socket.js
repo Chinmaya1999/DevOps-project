@@ -3,6 +3,8 @@ const Chat = require('./models/Chat');
 const User = require('./models/User');
 const CollaborationRequest = require('./models/CollaborationRequest');
 const jwt = require('jsonwebtoken');
+const cookie = require('cookie');
+const { COOKIE } = require('./services/session');
 const mongoose = require('mongoose');
 
 const isId = (v) => mongoose.Types.ObjectId.isValid(v);
@@ -21,6 +23,11 @@ const initializeSocket = (server) => {
   
   io = require('socket.io')(server, {
     maxHttpBufferSize: 1e5, // 100 KB per event
+    // Browsers don't apply CORS to WebSockets, and the session cookie is sent automatically — so check Origin ourselves
+    allowRequest: (req, cb) => {
+      const origin = req.headers.origin;
+      cb(null, !origin || allowedOrigins.includes(origin));
+    },
     cors: {
       origin: function (origin, callback) {
         if (!origin || allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
@@ -37,9 +44,12 @@ const initializeSocket = (server) => {
   // Authenticate every connection: identity comes from a verified JWT, never from client-supplied ids
   io.use(async (socket, next) => {
     try {
-      const token = socket.handshake.auth?.token;
+      // session cookie (browser) or explicit token (API clients)
+      const cookies = cookie.parse(socket.handshake.headers.cookie || '');
+      const token = socket.handshake.auth?.token || cookies[COOKIE];
       if (!token) return next(new Error('Authentication required'));
       const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
+      if (decoded.purpose) return next(new Error('Authentication failed'));
       const user = await User.findById(decoded.userId).select('_id isActive passwordChangedAt');
       if (!user || !user.isActive) return next(new Error('Authentication failed'));
       if (user.passwordChangedAt && decoded.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) {

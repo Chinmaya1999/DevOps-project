@@ -12,9 +12,14 @@ import {
   Package
 } from 'lucide-react'
 import { useDashboardStats } from '../../hooks/useDashboardStats'
+import { useAuth } from '../../context/AuthContext'
+import { recommendationsFor } from '../../utils/profile'
 
 const Dashboard: React.FC = () => {
   const { stats, loading, error } = useDashboardStats()
+  const { user } = useAuth()
+  const recommendations = recommendationsFor(user?.workExperience, user?.domains)
+  const plan = user?.plan
   const generators = [
     {
       name: 'Jenkins Pipeline',
@@ -99,11 +104,37 @@ const Dashboard: React.FC = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">
-          Welcome to DevOps  Generator
+          Welcome{user?.username ? `, ${user.username}` : ''}
         </h1>
         <p className="text-secondary-600 dark:text-secondary-400">
           Generate production-ready configuration files for your DevOps workflows
         </p>
+      </div>
+
+      {/* Personalised next steps (from experience level + chosen domains) */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xl font-semibold text-secondary-900 dark:text-secondary-100">Recommended for you</h2>
+          {plan && (
+            <span className="text-sm text-secondary-600 dark:text-secondary-400">
+              {plan.plan === 'pro'
+                ? `Pro${plan.daysLeft !== null ? ` · ${plan.daysLeft} days left` : ''}`
+                : <>Free plan · <Link to="/payment" className="text-primary-600 dark:text-primary-400 underline">Upgrade</Link></>}
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {recommendations.slice(0, 3).map((r) => (
+            <Link key={r.title} to={r.to} className="card p-5 hover:border-cyan-400/60 transition group">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-secondary-900 dark:text-secondary-100">{r.title}</h3>
+                {r.pro && plan?.plan !== 'pro' && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400/90 text-amber-950">PRO</span>}
+              </div>
+              <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">{r.text}</p>
+              <span className="mt-3 inline-flex items-center text-sm text-primary-600 dark:text-primary-400">Open <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" /></span>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Stats */}
@@ -178,16 +209,16 @@ const Dashboard: React.FC = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Link
-            to="/terraform-demos"
+            to="/help"
             className="flex items-center p-4 bg-secondary-50 dark:bg-secondary-800 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors duration-200"
           >
             <FileCode className="w-5 h-5 text-secondary-600 dark:text-secondary-400 mr-3" />
             <div>
               <p className="font-medium text-secondary-900 dark:text-secondary-100">
-                Terraform Demos
+                Help Desk
               </p>
               <p className="text-sm text-secondary-600 dark:text-secondary-400">
-                Browse pre-built Terraform templates
+                Pick your problem, get the fix
               </p>
             </div>
           </Link>

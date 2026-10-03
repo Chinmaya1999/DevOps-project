@@ -1,6 +1,11 @@
 const express = require('express');
 const crypto = require('crypto');
 const { limiters } = require('../middleware/security');
+const cashfree = require('../services/cashfreeService');
+const { reconcileOrder } = require('../services/paymentActivation');
+const { ensureInvoiceNumber, buildInvoice } = require('../services/invoicing');
+const refunds = require('../services/refunds');
+const { PLANS, PRICING, DURATION_DAYS, getEffectivePlan, extendSubscription, priceFor } = require('../services/plans');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -46,35 +51,19 @@ const upload = multer({
   }
 });
 
-// Payment configuration (you can update these with your actual details)
-const PAYMENT_CONFIG = {
-  upiId: 'chinmayakumarmallick@ybl',
-  upiQRCode: '/uploads/qrcode.png', // Place your PhonePe QR code image at backend/uploads/qrcode.png
-  bankDetails: {
-    accountName: 'Chinmaya Kumar Mallick',
-    accountNumber: '9178550406',
-    ifscCode: 'AIRP0000001',
-    bankName: 'AIRTEL PAYMENTS BANK'
-  },
-  pricing: {
-    monthly: 199,
-    yearly: 2999
-  }
-};
-
-// Get payment configuration (public)
-router.get('/config', (req, res) => {
-  const host = req.get('host');
-  const protocol = req.protocol;
-  // Use the dedicated QR code endpoint instead of static file
-  const fullQrCodeUrl = `${protocol}://${host}/api/payment/qrcode`;
-  
+// Public pricing for the pricing page (no personal/bank details are ever exposed)
+router.get('/pricing', (req, res) => {
   res.json({
     success: true,
     data: {
-      ...PAYMENT_CONFIG,
-      upiQRCode: fullQrCodeUrl
-    }
+      currency: 'INR',
+      pricing: PRICING,
+      plans: {
+        free: { generationsPerMonth: PLANS.free.generationsPerMonth, features: PLANS.free.features },
+        pro: { features: PLANS.pro.features },
+      },
+      gatewayEnabled: cashfree.isConfigured(),
+    },
   });
 });
 
@@ -172,7 +161,8 @@ router.post('/submit', auth, limiters.upload, upload.single('screenshot'), verif
     // Check if user already has a pending payment
     const pendingPayment = await Payment.findOne({
       user: userId,
-      status: 'pending'
+      status: 'pending',
+      paymentMethod: { $ne: 'cashfree' }
     });
 
     if (pendingPayment) {
@@ -183,7 +173,7 @@ router.post('/submit', auth, limiters.upload, upload.single('screenshot'), verif
     }
 
     // Calculate amount based on subscription type
-    const amount = subscriptionType === 'monthly' ? PAYMENT_CONFIG.pricing.monthly : PAYMENT_CONFIG.pricing.yearly;
+    const amount = priceFor(subscriptionType);
 
     // Create payment record
     const payment = new Payment({
@@ -213,23 +203,74 @@ router.post('/submit', auth, limiters.upload, upload.single('screenshot'), verif
   }
 });
 
-// Get user's payment history (authenticated)
+// The signed-in user's billing history (no screenshots, no admin identities)
 router.get('/my-payments', auth, async (req, res) => {
   try {
-    const payments = await Payment.find({ user: req.user._id })
-      .populate('verifiedBy', 'username email')
-      .sort({ createdAt: -1 });
-
+    const payments = await Payment.find({ user: req.user._id, status: { $in: ['verified', 'refunded', 'pending', 'rejected'] } }).sort({ createdAt: -1 });
     res.json({
       success: true,
-      data: payments
+      data: payments.map((p) => ({
+        id: p._id,
+        paymentNumber: p.paymentNumber,
+        createdAt: p.createdAt,
+        amount: p.amount,
+        currency: p.currency,
+        method: p.paymentMethod,
+        status: p.status,
+        subscriptionType: p.subscriptionType,
+        periodStart: p.periodStart || null,
+        periodEnd: p.periodEnd || null,
+        invoiceNumber: p.invoiceNumber || null,
+        refund: { status: p.refund?.status || 'none', amount: p.refund?.amount || null },
+        canRequestRefund: refunds.refundEligibility(p).ok,
+        rejectionReason: p.status === 'rejected' ? p.rejectionReason || null : null,
+      })),
+      refundWindowDays: refunds.WINDOW_DAYS(),
     });
   } catch (error) {
-    console.error('Get payments error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch payment history'
-    });
+    console.error('Get payments error:', error.message);
+    res.status(500).json({ success: false, error: 'Failed to fetch payment history' });
+  }
+});
+
+// Invoice data for one paid payment. Owner or admin only.
+router.get('/invoice/:id', auth, async (req, res) => {
+  try {
+    if (!/^[a-f0-9]{24}$/i.test(req.params.id)) return res.status(404).json({ success: false, error: 'Invoice not found' });
+    const payment = await Payment.findById(req.params.id);
+    const isOwner = payment && String(payment.user) === String(req.user._id);
+    if (!payment || (!isOwner && req.user.role !== 'admin') || !['verified', 'refunded'].includes(payment.status)) {
+      return res.status(404).json({ success: false, error: 'Invoice not found' });
+    }
+    if (!payment.invoiceNumber) await ensureInvoiceNumber(payment._id); // payments made before invoicing existed
+    const fresh = await Payment.findById(payment._id);
+    const User = require('../models/User');
+    const customer = isOwner ? req.user : await User.findById(payment.user);
+    res.json({ success: true, data: buildInvoice(fresh, customer) });
+  } catch (error) {
+    console.error('Invoice error:', error.message);
+    res.status(500).json({ success: false, error: 'Could not load the invoice' });
+  }
+});
+
+// Customer asks for a refund (within the refund window); an admin then approves it
+router.post('/:id/refund-request', auth, limiters.checkout, async (req, res) => {
+  if (!/^[a-f0-9]{24}$/i.test(req.params.id)) return res.status(404).json({ success: false, error: 'Payment not found' });
+  const r = await refunds.requestRefund(req.params.id, req.user._id, req.body?.reason);
+  if (r.error) return res.status(r.status).json({ success: false, error: r.error });
+  res.json({ success: true, message: 'Refund requested. We will review it shortly.' });
+});
+
+// Admin: execute the refund through Cashfree
+router.post('/:id/refund', auth, adminAuth, async (req, res) => {
+  if (!/^[a-f0-9]{24}$/i.test(req.params.id)) return res.status(404).json({ success: false, error: 'Payment not found' });
+  try {
+    const r = await refunds.executeRefund(req.params.id, req.user._id, req.body?.note);
+    if (r.error) return res.status(r.status).json({ success: false, error: r.error });
+    res.json({ success: true, data: r.payment, message: 'Refund initiated and the subscription period was removed' });
+  } catch (e) {
+    console.error('Refund error:', e.message);
+    res.status(500).json({ success: false, error: 'Refund failed' });
   }
 });
 
@@ -272,6 +313,13 @@ router.put('/verify/:paymentId', auth, adminAuth, async (req, res) => {
       });
     }
 
+    if (payment.paymentMethod === 'cashfree') {
+      return res.status(400).json({
+        success: false,
+        error: 'Online payments are verified automatically'
+      });
+    }
+
     if (payment.status !== 'pending') {
       return res.status(400).json({
         success: false,
@@ -299,18 +347,12 @@ router.put('/verify/:paymentId', auth, adminAuth, async (req, res) => {
       payment.verifiedBy = req.user._id;
       payment.verifiedAt = new Date();
 
-      // Update user subscription to premium (not trial)
+      // Renewals extend from the current end date instead of resetting it
       const user = payment.user;
-      const now = new Date();
-      const subscriptionDuration = payment.subscriptionType === 'monthly' ? 30 : 365;
-      
-      // Set premium subscription directly
-      user.subscription.type = 'premium';
-      user.subscription.startDate = now;
-      user.subscription.endDate = new Date(now.getTime() + subscriptionDuration * 24 * 60 * 60 * 1000);
-      user.subscription.subscriptionType = payment.subscriptionType;
-      user.subscription.autoRenew = false;
-      
+      extendSubscription(user, payment.subscriptionType);
+      payment.subscriptionApplied = true;
+      payment.periodEnd = user.subscription.endDate;
+      payment.periodStart = new Date(user.subscription.endDate.getTime() - DURATION_DAYS[payment.subscriptionType] * 86400000);
       await user.save();
     } else {
       payment.status = 'rejected';
@@ -318,6 +360,7 @@ router.put('/verify/:paymentId', auth, adminAuth, async (req, res) => {
     }
 
     await payment.save();
+    if (action === 'approve') await ensureInvoiceNumber(payment._id);
 
     res.json({
       success: true,
@@ -363,6 +406,124 @@ router.get('/stats', auth, adminAuth, async (req, res) => {
       success: false,
       error: 'Failed to fetch payment statistics'
     });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Online payments (Cashfree)
+// ---------------------------------------------------------------------------
+
+// Plans, prices and what the signed-in user currently has
+router.get('/plans', auth, (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      pricing: PRICING,
+      current: getEffectivePlan(req.user),
+      gatewayEnabled: cashfree.isConfigured(),
+    },
+  });
+});
+
+// Create a checkout order. The AMOUNT is decided here on the server — never taken from the client.
+router.post('/cashfree/order', auth, limiters.checkout, async (req, res) => {
+  try {
+    if (!cashfree.isConfigured()) {
+      return res.status(503).json({ success: false, error: 'Online payments are temporarily unavailable' });
+    }
+    const { subscriptionType, phone } = req.body || {};
+    if (!['monthly', 'yearly'].includes(subscriptionType)) {
+      return res.status(400).json({ success: false, error: 'Invalid subscription type' });
+    }
+    if (!/^[6-9]\d{9}$/.test(String(phone || ''))) {
+      return res.status(400).json({ success: false, error: 'Enter a valid 10-digit Indian mobile number' });
+    }
+
+    // abandoned checkouts must not block a new one
+    await Payment.updateMany(
+      { user: req.user._id, paymentMethod: 'cashfree', status: 'pending' },
+      { $set: { status: 'cancelled' } }
+    );
+
+    const amount = priceFor(subscriptionType);
+    const orderId = 'ord_' + crypto.randomBytes(12).toString('hex');
+    const payment = await Payment.create({
+      user: req.user._id,
+      amount,
+      currency: 'INR',
+      paymentMethod: 'cashfree',
+      transactionId: orderId,
+      gatewayOrderId: orderId,
+      subscriptionType,
+      status: 'pending',
+    });
+
+    const frontend = (process.env.FRONTEND_URL || 'https://cmcloud.online').replace(/\/$/, '');
+    const api = (process.env.API_PUBLIC_URL || '').replace(/\/$/, '');
+    let order;
+    try {
+      order = await cashfree.createOrder({
+        orderId,
+        amount,
+        customer: { id: String(req.user._id), email: req.user.email, phone: String(phone), name: req.user.username },
+        returnUrl: `${frontend}/payment/status?order_id={order_id}`,
+        notifyUrl: api ? `${api}/api/payment/cashfree/webhook` : undefined,
+      });
+    } catch (e) {
+      payment.status = 'cancelled';
+      await payment.save();
+      console.error('Cashfree create order failed:', e.response?.status, e.response?.data?.message || e.message);
+      return res.status(502).json({ success: false, error: 'Could not start the payment. Please try again in a moment.' });
+    }
+
+    res.json({
+      success: true,
+      data: { orderId, paymentSessionId: order.payment_session_id, environment: process.env.CASHFREE_ENV === 'sandbox' ? 'sandbox' : 'production' },
+    });
+  } catch (error) {
+    console.error('Create order error:', error.message);
+    res.status(500).json({ success: false, error: 'Failed to create order' });
+  }
+});
+
+// The customer returns from checkout: verify with Cashfree, then activate. Owner only.
+router.get('/cashfree/status/:orderId', auth, async (req, res) => {
+  try {
+    const orderId = String(req.params.orderId);
+    const own = await Payment.findOne({ gatewayOrderId: orderId, user: req.user._id }).select('_id');
+    if (!own) return res.status(404).json({ success: false, error: 'Order not found' });
+
+    const result = await reconcileOrder(orderId);
+    const User = require('../models/User');
+    const fresh = await User.findById(req.user._id);
+    res.json({
+      success: true,
+      data: { status: result.status, plan: getEffectivePlan(fresh), message: result.payment?.rejectionReason || undefined },
+    });
+  } catch (error) {
+    console.error('Order status error:', error.response?.data?.message || error.message);
+    res.status(502).json({ success: false, error: 'Could not verify the payment right now. It will be activated automatically once confirmed.' });
+  }
+});
+
+// Cashfree -> us. Authenticated by HMAC signature over the RAW body (see express.json verify in server.js).
+router.post('/cashfree/webhook', async (req, res) => {
+  const ok = cashfree.verifyWebhookSignature(req.rawBody, req.get('x-webhook-signature'), req.get('x-webhook-timestamp'));
+  if (!ok) return res.status(401).json({ error: 'Invalid signature' });
+  try {
+    const type = req.body?.type;
+    if (type === 'REFUND_STATUS_WEBHOOK') {
+      const refundOrder = req.body?.data?.refund?.order_id;
+      if (typeof refundOrder === 'string') await refunds.syncRefund(refundOrder);
+      return res.status(200).json({ received: true });
+    }
+    const orderId = req.body?.data?.order?.order_id;
+    // The webhook only tells us WHERE to look; the real state is fetched from Cashfree.
+    if (typeof orderId === 'string') await reconcileOrder(orderId);
+    res.status(200).json({ received: true });
+  } catch (error) {
+    console.error('Webhook processing error:', error.message);
+    res.status(500).json({ error: 'Processing failed' }); // Cashfree will retry
   }
 });
 

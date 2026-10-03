@@ -1,7 +1,8 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { auth } = require('../middleware/auth');
-const { register, login, getProfile, googleAuth, googleCallback, githubAuth, githubCallback, verifyEmail, verifyOTP, resendOTP, resendVerificationEmail, forgotPassword, resetPassword } = require('../controllers/authController');
+const twoFactor = require('../controllers/twoFactorController');
+const { register, login, logout, getProfile, verifyEmail, verifyOTP, resendOTP, resendVerificationEmail, forgotPassword, resetPassword } = require('../controllers/authController');
 
 const { limiters } = require('../middleware/security');
 
@@ -58,13 +59,16 @@ router.post('/forgot-password', passwordResetLimiter, forgotPassword);
 // Reset password
 router.post('/reset-password', limiters.passwordReset, resetPassword);
 
-// Google OAuth
-router.get('/google', googleAuth);
-router.get('/callback/google', googleCallback);
+// Logout (clears the session cookie)
+router.post('/logout', logout);
 
-// GitHub OAuth
-router.get('/github', githubAuth);
-router.get('/callback/github', githubCallback);
+// Two-factor authentication
+router.post('/2fa/verify', limiters.twoFactor, twoFactor.verifyLogin);
+router.get('/2fa', auth, twoFactor.status);
+router.post('/2fa/setup', auth, limiters.twoFactor, twoFactor.setup);
+router.post('/2fa/enable', auth, limiters.twoFactor, twoFactor.enable);
+router.post('/2fa/disable', auth, limiters.twoFactor, twoFactor.disable);
+router.post('/2fa/recovery-codes', auth, limiters.twoFactor, twoFactor.regenerateRecoveryCodes);
 
 // Get user profile (protected)
 router.get('/profile', auth, getProfile);

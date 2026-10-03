@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { encrypt, decrypt } = require('../utils/crypto');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
@@ -86,6 +87,14 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: {
     type: Date
   },
+  // Two-factor authentication (TOTP). Secrets are encrypted at rest; recovery codes are stored as SHA-256 hashes.
+  twoFactor: {
+    enabled: { type: Boolean, default: false },
+    secret: { type: String, set: encrypt, get: decrypt },
+    pendingSecret: { type: String, set: encrypt, get: decrypt },
+    recoveryCodes: { type: [String], default: [] },
+    lastStep: { type: Number, default: 0 }
+  },
   resetPasswordToken: {
     type: String
   },
@@ -167,6 +176,7 @@ userSchema.methods.toJSON = function() {
   delete userObject.resetPasswordExpires;
   delete userObject.loginAttempts;
   delete userObject.lockUntil;
+  if (userObject.twoFactor) userObject.twoFactor = { enabled: !!userObject.twoFactor.enabled };
   return userObject;
 };
 

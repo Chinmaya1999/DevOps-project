@@ -13,8 +13,6 @@ const VerifyEmail = () => {
     const verifyEmail = async () => {
       const token = searchParams.get('token')
       
-      console.log('Verification page - token:', token)
-      
       if (!token) {
         setStatus('error')
         setMessage('Invalid verification link. No token provided.')
@@ -22,9 +20,7 @@ const VerifyEmail = () => {
       }
 
       try {
-        console.log('Calling verification API with token:', token)
-        const response = await api.get(`/auth/verify-email?token=${token}`)
-        console.log('Verification response:', response.data)
+        await api.get(`/auth/verify-email?token=${token}`)
         
         setStatus('success')
         setMessage('Email verified successfully! You can now login.')

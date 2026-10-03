@@ -5,6 +5,7 @@ const GenerateController = require('../controllers/generateController');
 const archiver = require('archiver');
 const BundleGenerator = require('../services/bundleGenerator');
 const { generateBundleSchema } = require('../utils/validators');
+const { requireFeature, enforceGenerationQuota } = require('../middleware/subscription');
 
 const router = express.Router();
 
@@ -13,6 +14,9 @@ router.get('/templates', GenerateController.getTemplates);
 
 // All other generate routes require authentication
 router.use(auth);
+
+// Free plan: capped generations per month (bundle is Pro-only and checked on its own route)
+router.use((req, res, next) => (req.method === 'POST' && req.path !== '/bundle' ? enforceGenerationQuota(req, res, next) : next()));
 
 // Generate Jenkins pipeline
 router.post('/jenkins', GenerateController.generateJenkins);
@@ -54,7 +58,7 @@ router.post('/shell', GenerateController.generateShell);
 router.post('/python', GenerateController.generatePython);
 
 // Full-stack bundle: Dockerfile + compose + CI/CD + Kubernetes, downloaded as a ZIP
-router.post('/bundle', (req, res) => {
+router.post('/bundle', requireFeature('bundle'), (req, res) => {
   const { error, value } = generateBundleSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ error: 'Validation failed', details: error.details[0].message });

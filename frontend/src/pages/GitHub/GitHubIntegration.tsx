@@ -1,3 +1,4 @@
+import { getSecret, setSecret } from '../../utils/secretStore';
 import React, { useState, useEffect } from 'react';
 import { Card, Input, Button, Table, Tag, Space, message, Spin, Alert, Modal, Row, Col, Tree, Drawer, Tabs } from 'antd';
 import { GithubOutlined, ReloadOutlined, LinkOutlined, CheckCircleOutlined, CloudOutlined, ContainerOutlined, CloudServerOutlined, FileTextOutlined, BarChartOutlined, LockOutlined, EyeOutlined, RocketOutlined, FolderOpenOutlined, FileOutlined, SaveOutlined, BuildOutlined, UploadOutlined, BranchesOutlined } from '@ant-design/icons';
@@ -87,7 +88,7 @@ const GitHubIntegration: React.FC = () => {
 
   // Load saved GitHub token on component mount
   useEffect(() => {
-    const savedToken = localStorage.getItem('github_token');
+    const savedToken = getSecret('github_token');
     if (savedToken) {
       setToken(savedToken);
       // Auto-fetch repositories if token exists
@@ -98,7 +99,7 @@ const GitHubIntegration: React.FC = () => {
   // Load saved Docker Hub credentials
   useEffect(() => {
     const savedDockerHubUsername = localStorage.getItem('dockerhub_username');
-    const savedDockerHubToken = localStorage.getItem('dockerhub_token');
+    const savedDockerHubToken = getSecret('dockerhub_token');
     if (savedDockerHubUsername) setDockerHubUsername(savedDockerHubUsername);
     if (savedDockerHubToken) setDockerHubToken(savedDockerHubToken);
   }, []);
@@ -114,13 +115,13 @@ const GitHubIntegration: React.FC = () => {
 
     try {
       const response = await api.get('/github/repositories', {
-        params: { token }
+        headers: { 'x-github-token': token }
       });
 
       if (response.data.repositories) {
         setRepositories(response.data.repositories);
-        // Save token to localStorage
-        localStorage.setItem('github_token', token);
+        // keep the token for this tab only (sessionStorage), never on disk
+        setSecret('github_token', token);
         message.success(`Found ${response.data.repositories.length} repositories`);
       }
     } catch (err: any) {
@@ -135,7 +136,7 @@ const GitHubIntegration: React.FC = () => {
     setLoadingFiles(true);
     try {
       const response = await api.get(`/github/files/${owner}/${repo}`, {
-        params: { token }
+        headers: { 'x-github-token': token }
       });
       console.log('File structure response:', response.data);
       if (response.data.files) {
@@ -161,7 +162,7 @@ const GitHubIntegration: React.FC = () => {
     if (!selectedRepo) return;
     try {
       const response = await api.get(`/github/file/${selectedRepo.owner}/${selectedRepo.repo}`, {
-        params: { token, path: filePath }
+        headers: { 'x-github-token': token }, params: { path: filePath }
       });
       if (response.data.content) {
         setFileContent(response.data.content);
@@ -205,7 +206,7 @@ const GitHubIntegration: React.FC = () => {
     try {
       // Save Docker Hub credentials
       localStorage.setItem('dockerhub_username', dockerHubUsername);
-      localStorage.setItem('dockerhub_token', dockerHubToken);
+      setSecret('dockerhub_token', dockerHubToken);
 
       const response = await api.post('/github/build-docker', {
         token,
@@ -260,8 +261,8 @@ const GitHubIntegration: React.FC = () => {
     setLoadingCommits(true);
     try {
       const [branchesResponse, commitsResponse] = await Promise.all([
-        api.get(`/github/branches/${owner}/${repo}`, { params: { token } }),
-        api.get(`/github/commits/${owner}/${repo}`, { params: { token, limit: 5 } })
+        api.get(`/github/branches/${owner}/${repo}`, { headers: { 'x-github-token': token } }),
+        api.get(`/github/commits/${owner}/${repo}`, { headers: { 'x-github-token': token }, params: { limit: 5 } })
       ]);
 
       if (branchesResponse.data.branches) {
@@ -290,7 +291,7 @@ const GitHubIntegration: React.FC = () => {
 
     try {
       const response = await api.get(`/github/analyze/${owner}/${repo}`, {
-        params: { token }
+        headers: { 'x-github-token': token }
       });
 
       if (response.data.analysis) {

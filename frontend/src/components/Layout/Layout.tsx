@@ -1,3 +1,5 @@
+import ThemeToggle from '../UI/ThemeToggle'
+import { loadDeploymentSettings, saveDeploymentSettings } from '../../utils/secretStore'
 import React, { useState, useRef, useEffect } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
@@ -15,7 +17,6 @@ import {
   Cloud,
   Server,
   Package,
-  Database,
   CheckCircle,
   Container,
   Terminal,
@@ -35,7 +36,9 @@ import {
   CreditCard,
   MessageSquare,
   Map,
-  DollarSign
+  DollarSign,
+  LifeBuoy,
+  Receipt,
 } from 'lucide-react'
 
 const Layout: React.FC = () => {
@@ -44,6 +47,13 @@ const Layout: React.FC = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
   const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [subscriptionPopupOpen, setSubscriptionPopupOpen] = useState(false)
+  const [upgradeInfo, setUpgradeInfo] = useState<{ message?: string } | null>(null)
+
+  useEffect(() => {
+    const onUpgrade = (e: Event) => setUpgradeInfo((e as CustomEvent).detail || {})
+    window.addEventListener('upgrade-required', onUpgrade)
+    return () => window.removeEventListener('upgrade-required', onUpgrade)
+  }, [])
   const [profileData, setProfileData] = useState({
     username: '',
     email: '',
@@ -114,9 +124,8 @@ const Layout: React.FC = () => {
     })
 
     try {
-      const savedSettings = localStorage.getItem('infraPilotDeploymentSettings')
-      if (savedSettings) {
-        const parsedSettings = JSON.parse(savedSettings)
+      const parsedSettings = loadDeploymentSettings()
+      if (Object.keys(parsedSettings).length > 0) {
         setDeploymentSettings({
           githubToken: parsedSettings.githubToken || '',
           publicIpv4Address: parsedSettings.publicIpv4Address || '',
@@ -205,10 +214,10 @@ const Layout: React.FC = () => {
   const handleProfileUpdate = async () => {
     setUpdating(true)
     try {
-      localStorage.setItem('infraPilotDeploymentSettings', JSON.stringify({
+      saveDeploymentSettings({
         ...deploymentSettings,
         pemFileName
-      }))
+      })
       localStorage.setItem('infraPilotProfileData', JSON.stringify(profileData))
       toast.success('Profile settings saved successfully')
       setProfileModalOpen(false)
@@ -233,13 +242,13 @@ const Layout: React.FC = () => {
     }
   }, [])
 
-  const navigation = [
+  const navigation: { name: string; href: string; icon: React.ElementType; pro?: boolean }[] = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Vision - One-Click Deploy', href: '/vision', icon: Rocket },
-    { name: 'Cloud Cost Analysis', href: '/cloud-cost-analysis', icon: DollarSign },
-    { name: 'Deployments', href: '/deployments', icon: Server },
+    { name: 'Vision - One-Click Deploy', href: '/vision', icon: Rocket, pro: true },
+    { name: 'Cloud Cost Analysis', href: '/cloud-cost-analysis', icon: DollarSign, pro: true },
+    { name: 'Deployments', href: '/deployments', icon: Server, pro: true },
     { name: 'GitHub Integration', href: '/github', icon: Github },
-    { name: 'Full-stack Bundle (ZIP)', href: '/bundle', icon: Package },
+    { name: 'Full-stack Bundle (ZIP)', href: '/bundle', icon: Package, pro: true },
     { name: 'Jenkins Pipeline', href: '/generator/jenkins', icon: Server },
     { name: 'GitHub Actions', href: '/generator/github-actions', icon: Zap },
     { name: 'Ansible Playbooks', href: '/generator/ansible', icon: Shield },
@@ -247,12 +256,18 @@ const Layout: React.FC = () => {
     { name: 'Terraform IaC', href: '/generator/terraform', icon: Package },
     { name: 'Dockerfile', href: '/generator/dockerfile', icon: Container },
     { name: 'DevOps Documentation', href: '/devops-docs', icon: BookOpen },
-    { name: 'Terraform Demos', href: '/terraform-demos', icon: Database },
+    { name: 'Help Desk', href: '/help', icon: LifeBuoy },
     { name: 'DevOps Toolbox', href: '/toolbox', icon: Terminal },
     { name: 'Validator', href: '/validator', icon: CheckCircle },
     { name: 'History', href: '/history', icon: History },
-    { name: 'Upgrade to Premium', href: '/payment', icon: CreditCard },
+    { name: 'Billing', href: '/billing', icon: Receipt },
+    { name: 'Security', href: '/security', icon: ShieldCheck },
+    { name: 'Upgrade to Pro', href: '/payment', icon: CreditCard },
   ]
+
+  const isPro = user?.plan?.plan === 'pro'
+  // hide the upgrade link once the user is already on Pro
+  const visibleNav = navigation.filter((i) => !(i.href === '/payment' && isPro))
 
   const adminNavigation = [
     { name: 'Admin', href: '/admin', icon: Settings },
@@ -262,7 +277,6 @@ const Layout: React.FC = () => {
 
   const scriptsSubmenu = [
     { name: 'Bash Script', href: '/generator/bash', icon: Terminal },
-    { name: 'Shell Script', href: '/generator/shell', icon: Code },
     { name: 'Python Script', href: '/generator/python', icon: FileText },
    
   ]
@@ -300,7 +314,7 @@ const Layout: React.FC = () => {
             </button>
           </div>
           <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-200px)]">
-            {navigation.map((item) => {
+            {visibleNav.map((item) => {
               const Icon = item.icon
               return (
                 <Link
@@ -313,6 +327,7 @@ const Layout: React.FC = () => {
                 >
                   <Icon className="w-5 h-5 mr-3" />
                   {item.name}
+                  {item.pro && !isPro && <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400/90 text-amber-950">PRO</span>}
                 </Link>
               )
             })}
@@ -393,7 +408,7 @@ const Layout: React.FC = () => {
             </span>
           </div>
           <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-200px)]">
-            {navigation.map((item) => {
+            {visibleNav.map((item) => {
               const Icon = item.icon
               return (
                 <Link
@@ -405,6 +420,7 @@ const Layout: React.FC = () => {
                 >
                   <Icon className="w-5 h-5 mr-3" />
                   {item.name}
+                  {item.pro && !isPro && <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400/90 text-amber-950">PRO</span>}
                 </Link>
               )
             })}
@@ -489,15 +505,16 @@ const Layout: React.FC = () => {
               <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                 <BarChart3 className="w-4 h-4 text-blue-500" />
                 <span className="font-medium">Welcome back, {user?.username}</span>
-                {user?.subscription?.type === 'premium' && (
+                {isPro && (
                   <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full shadow-md">
                     <Crown className="w-3 h-3 mr-1" />
-                    Premium
+                    Pro
                   </span>
                 )}
               </div>
               
               <div className="flex items-center space-x-2">
+                <ThemeToggle />
                 <button
                   onClick={() => navigate('/dashboard')}
                   className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -935,6 +952,21 @@ const Layout: React.FC = () => {
                   'Save Changes'
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upgrade prompt: shown when the API says a feature needs Pro (or the Free limit is reached) */}
+      {upgradeInfo && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="upgrade-title">
+          <div className="bg-white dark:bg-ink-800 border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl max-w-md w-full p-7 text-center">
+            <Crown className="w-12 h-12 mx-auto text-amber-500" />
+            <h2 id="upgrade-title" className="mt-4 text-2xl font-bold text-slate-900 dark:text-white">Unlock with Pro</h2>
+            <p className="mt-2 text-slate-600 dark:text-gray-300">{upgradeInfo.message || 'This feature is part of the Pro plan.'}</p>
+            <div className="mt-6 flex gap-3">
+              <button onClick={() => setUpgradeInfo(null)} className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-gray-200">Not now</button>
+              <button onClick={() => { setUpgradeInfo(null); navigate('/payment') }} className="flex-1 btn-primary">See plans</button>
             </div>
           </div>
         </div>

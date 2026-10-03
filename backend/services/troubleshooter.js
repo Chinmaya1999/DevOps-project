@@ -109,5 +109,20 @@ class Troubleshooter {
   }
 }
 
+/** Areas and the symptoms in each — powers the guided "what are you seeing?" flow. */
+Troubleshooter.catalog = () => {
+  const areas = new Map();
+  for (const r of RULES) {
+    if (!areas.has(r.tool)) areas.set(r.tool, []);
+    areas.get(r.tool).push({ id: r.id, title: r.title });
+  }
+  return [...areas.entries()].map(([area, issues]) => ({ area, issues }));
+};
+
+Troubleshooter.byId = (id) => {
+  const r = RULES.find((x) => x.id === id);
+  return r ? { id: r.id, tool: r.tool, title: r.title, cause: r.cause, steps: r.steps } : null;
+};
+
 Troubleshooter.RULE_COUNT = RULES.length;
 module.exports = Troubleshooter;

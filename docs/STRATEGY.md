@@ -42,7 +42,7 @@ Generating YAML is now a commodity — ChatGPT and Copilot do it for free. Peopl
 | Plan | Price (suggested) | For | Includes |
 |------|------------------|-----|----------|
 | Free | ₹0 | Learners, open-source | All generators (rate-limited), troubleshooter, secret scanner, docs, community |
-| Pro | ₹199–299/mo | Individual engineers | Unlimited generation + ZIP bundles, validator autofix, saved history, cost analysis, priority templates |
+| Pro (live) | ₹199/mo or ₹1,990/yr | Individual engineers | Unlimited generation + ZIP bundles, validator autofix, saved history, cost analysis, priority templates |
 | Team | ₹1,499–2,999/mo (≈ $19–39) | 3–15 engineers | Shared template library, RBAC, audit log, Slack/GitHub integrations, standards enforcement |
 | Enterprise | Contact us | Companies | SSO/SAML, private cloud deploy, SLA, security review |
 

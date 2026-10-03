@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const axios = require('axios');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const User = require('../models/User');
@@ -7,6 +6,9 @@ const { registerSchema, loginSchema } = require('../utils/validators');
 const { sha256, secureOTP, safeEqual } = require('../utils/crypto');
 const { passwordProblem } = require('../middleware/security');
 
+const { getEffectivePlan } = require('../services/plans');
+const { issueSession, clearSession, csrfFor } = require('../services/session');
+const { signChallenge } = require('../services/twoFactorChallenge');
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 const MAX_OTP_ATTEMPTS = 5;
@@ -101,10 +103,6 @@ const sendWelcomeEmail = async (email, username) => {
     console.error('Error sending welcome email:', error);
     // Don't throw error to prevent registration from failing
   }
-};
-
-const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '1d', algorithm: 'HS256' });
 };
 
 // Generate email verification token
@@ -351,10 +349,17 @@ const login = async (req, res) => {
 
     user.loginAttempts = 0;
     user.lockUntil = undefined;
+
+    // Password was right. If 2FA is on, no session yet — the client must present a code with this short-lived challenge.
+    if (user.twoFactor && user.twoFactor.enabled) {
+      await user.save();
+      return res.json({ twoFactorRequired: true, challenge: signChallenge(user._id) });
+    }
+
     user.lastLogin = new Date();
     await user.save();
 
-    const token = generateToken(user._id);
+    const { csrfToken } = issueSession(res, user._id);
 
     res.json({
       message: 'Login successful',
@@ -363,9 +368,12 @@ const login = async (req, res) => {
         username: user.username,
         email: user.email,
         role: user.role,
-        lastLogin: user.lastLogin
+        lastLogin: user.lastLogin,
+        subscription: user.subscription,
+        plan: getEffectivePlan(user),
+        twoFactorEnabled: false
       },
-      token
+      csrfToken
     });
   } catch (error) {
     console.error('Login error:', error.message);
@@ -385,9 +393,12 @@ const getProfile = async (req, res) => {
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
         subscription: user.subscription,
+        plan: getEffectivePlan(user),
+        twoFactorEnabled: !!(user.twoFactor && user.twoFactor.enabled),
         workExperience: user.workExperience,
         domains: user.domains
-      }
+      },
+      csrfToken: req.sessionToken ? csrfFor(req.sessionToken) : undefined
     });
   } catch (error) {
     console.error('Profile error:', error);
@@ -395,217 +406,10 @@ const getProfile = async (req, res) => {
   }
 };
 
-// Google OAuth
-const googleAuth = (req, res) => {
-  const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-  if (!GOOGLE_CLIENT_ID) {
-    return res.status(500).json({ error: 'Google OAuth not configured' });
-  }
-  
-  const redirect_uri = encodeURIComponent('https://cmcloud.online/api/auth/callback/google');
-  const scope = encodeURIComponent('openid profile email');
-  
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirect_uri}&scope=${scope}&response_type=code`;
-  
-  res.redirect(authUrl);
-};
-
-const googleCallback = async (req, res) => {
-  const { code } = req.query;
-  
-  console.log('Google OAuth callback received:', { code: code ? 'present' : 'missing' });
-  
-  if (!code) {
-    console.error('Google OAuth: No code in callback');
-    return res.redirect('https://cmcloud.online/login?error=google_auth_failed&reason=no_code');
-  }
-
-  try {
-    // Exchange code for access token
-    const tokenResponse = await axios.post(
-      'https://oauth2.googleapis.com/token',
-      {
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        code: code,
-        redirect_uri: 'https://cmcloud.online/api/auth/callback/google',
-        grant_type: 'authorization_code'
-      }
-    );
-
-    const { access_token } = tokenResponse.data;
-
-    // Get user info from Google
-    const userResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
-      headers: {
-        Authorization: `Bearer ${access_token}`
-      }
-    });
-
-    const googleUser = userResponse.data;
-
-    if (!googleUser.email) {
-      console.error('Google OAuth: No email in user info');
-      return res.redirect('https://cmcloud.online/login?error=no_email');
-    }
-
-    // Check if user exists
-    let user = await User.findOne({ email: googleUser.email });
-
-    if (user) {
-      // Update Google info if user exists
-      user.googleId = googleUser.id;
-      user.avatar = googleUser.picture;
-      user.lastLogin = new Date();
-      await user.save();
-    } else {
-      // Create new user
-      const username = googleUser.name || googleUser.email.split('@')[0];
-      
-      // Check if username exists
-      const existingUsername = await User.findOne({ username });
-      let finalUsername = username;
-      if (existingUsername) {
-        finalUsername = `${username}_${googleUser.id}`;
-      }
-
-      user = new User({
-        username: finalUsername,
-        email: googleUser.email,
-        googleId: googleUser.id,
-        avatar: googleUser.picture,
-        password: Math.random().toString(36).slice(-8), // Random password for Google users
-        isActive: true,
-        role: 'user', // Explicitly set to user
-        isEmailVerified: true // OAuth users are considered verified since the provider verified the email
-      });
-      await user.save();
-
-      // Send welcome email for new Google users
-      await sendWelcomeEmail(googleUser.email, finalUsername);
-    }
-
-    // Generate JWT token
-    const token = generateToken(user._id);
-
-    // Redirect to frontend with token - directly to dashboard
-    res.redirect(`https://cmcloud.online/dashboard?token=${token}&google=true`);
-  } catch (error) {
-    console.error('Google OAuth error:', error.response?.data || error.message);
-    res.redirect(`https://cmcloud.online/login?error=google_auth_failed&reason=${encodeURIComponent(error.message || 'unknown')}`);
-  }
-};
-
-// GitHub OAuth
-const githubAuth = (req, res) => {
-  const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-  if (!GITHUB_CLIENT_ID) {
-    return res.status(500).json({ error: 'GitHub OAuth not configured' });
-  }
-  
-  const redirect_uri = encodeURIComponent('https://cmcloud.online/api/auth/callback/github');
-  const scope = 'user:email';
-  
-  const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirect_uri}&scope=${scope}`;
-  
-  res.redirect(authUrl);
-};
-
-const githubCallback = async (req, res) => {
-  const { code } = req.query;
-  
-  if (!code) {
-    return res.redirect('https://cmcloud.online/login?error=github_auth_failed');
-  }
-
-  try {
-    // Exchange code for access token
-    const tokenResponse = await axios.post(
-      'https://github.com/login/oauth/access_token',
-      {
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
-        code: code,
-        redirect_uri: 'https://cmcloud.online/api/auth/callback/github'
-      },
-      {
-        headers: {
-          Accept: 'application/json'
-        }
-      }
-    );
-
-    const { access_token } = tokenResponse.data;
-
-    // Get user info from GitHub
-    const userResponse = await axios.get('https://api.github.com/user', {
-      headers: {
-        Authorization: `Bearer ${access_token}`
-      }
-    });
-
-    const githubUser = userResponse.data;
-
-    // Get user email
-    const emailResponse = await axios.get('https://api.github.com/user/emails', {
-      headers: {
-        Authorization: `Bearer ${access_token}`
-      }
-    });
-
-    const primaryEmail = emailResponse.data.find(email => email.primary && email.verified)?.email || githubUser.email;
-
-    if (!primaryEmail) {
-      return res.redirect('https://cmcloud.online/login?error=no_email');
-    }
-
-    // Check if user exists
-    let user = await User.findOne({ email: primaryEmail });
-
-    if (user) {
-      // Update GitHub info if user exists
-      user.githubId = githubUser.id;
-      user.githubUsername = githubUser.login;
-      user.avatar = githubUser.avatar_url;
-      user.lastLogin = new Date();
-      await user.save();
-    } else {
-      // Create new user
-      const username = githubUser.login || primaryEmail.split('@')[0];
-      
-      // Check if username exists
-      const existingUsername = await User.findOne({ username });
-      let finalUsername = username;
-      if (existingUsername) {
-        finalUsername = `${username}_${githubUser.id}`;
-      }
-
-      user = new User({
-        username: finalUsername,
-        email: primaryEmail,
-        githubId: githubUser.id,
-        githubUsername: githubUser.login,
-        avatar: githubUser.avatar_url,
-        password: Math.random().toString(36).slice(-8), // Random password for GitHub users
-        isActive: true,
-        role: 'user', // Explicitly set to user
-        isEmailVerified: true // OAuth users are considered verified since the provider verified the email
-      });
-      await user.save();
-
-      // Send welcome email for new GitHub users
-      await sendWelcomeEmail(primaryEmail, finalUsername);
-    }
-
-    // Generate JWT token
-    const token = generateToken(user._id);
-
-    // Redirect to frontend with token - directly to dashboard
-    res.redirect(`https://cmcloud.online/dashboard?token=${token}&github=true`);
-  } catch (error) {
-    console.error('GitHub OAuth error:', error);
-    res.redirect('https://cmcloud.online/login?error=github_auth_failed');
-  }
+// Logout: drop the session cookie
+const logout = (req, res) => {
+  clearSession(res);
+  res.json({ message: 'Logged out' });
 };
 
 // Verify OTP endpoint
@@ -994,13 +798,10 @@ const resetPassword = async (req, res) => {
 };
 
 module.exports = {
+  logout,
   register,
   login,
   getProfile,
-  googleAuth,
-  googleCallback,
-  githubAuth,
-  githubCallback,
   verifyEmail,
   verifyOTP,
   resendOTP,

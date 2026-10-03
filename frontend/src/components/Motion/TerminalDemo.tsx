@@ -22,7 +22,7 @@ const TerminalDemo: React.FC = () => {
   }, [reduce])
 
   return (
-    <div className="glass-panel overflow-hidden font-mono text-sm shadow-2xl shadow-cyan-500/10">
+    <div className="rounded-2xl bg-ink-900 border border-white/10 overflow-hidden font-mono text-sm shadow-2xl shadow-cyan-500/10">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
         <span className="w-3 h-3 rounded-full bg-red-500/80" />
         <span className="w-3 h-3 rounded-full bg-yellow-500/80" />

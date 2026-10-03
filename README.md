@@ -41,6 +41,19 @@ Run the backend tests with `cd backend && npm test`.
 Drop an optional looping `hero.mp4` (≤ 8 s, < 4 MB) and `hero-poster.jpg` in `frontend/public/media/`.
 The page works without them.
 
+## Payments (Cashfree)
+
+1. Put `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `CASHFREE_ENV`, `FRONTEND_URL`, `API_PUBLIC_URL` in `backend/.env` (and your `ENV_FILE` deploy secret).
+2. Verify the keys without charging anything: `cd backend && node scripts/checkCashfree.js`
+3. Plans/prices live in `backend/services/plans.js` (Free: 10 generations/month; Pro: unlimited + bundle, deployments, cost analysis, Vision).
+4. In the Cashfree dashboard, whitelist your server IP and approve your website domain for production checkout.
+
+## Accounts, billing and security features
+
+- Cookie sessions + CSRF protection, optional two-factor login (Security page), password reset, email OTP verification.
+- Billing page: payment history, printable invoices (`INVOICE_*` env vars fill in your business details), refund requests (`REFUND_WINDOW_DAYS`).
+- Admins refund online payments from *Admin → Payment Verification*.
+
 ## More docs
 
 - [SECURITY.md](SECURITY.md) — what is protected and how, setup checklist, known gaps

@@ -144,15 +144,11 @@ jobs:
             # Create .env file from GitHub secret
             echo "${{ secrets.ENV_FILE }}" > .env
             
-            # Start backend container with OAuth environment variables
+            # Start backend container (all secrets come from the .env file)
             sudo docker run -d \
               --name backend \
               -p 5001:5001 \
               --env-file .env \
-              -e GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
-              -e GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
-              -e GITHUB_CLIENT_ID="${{ secrets.GITHUB_CLIENT_ID }}" \
-              -e GITHUB_CLIENT_SECRET="${{ secrets.GITHUB_CLIENT_SECRET }}" \
               awsmallick1999/infrapilot-backend:latest
             
             # Start frontend container

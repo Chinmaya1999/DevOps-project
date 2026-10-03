@@ -1,362 +1,139 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Upload, CreditCard, Calendar, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
-import { api } from '../../services/api';
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, Check, Crown, Lock, ShieldCheck } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { api } from '../../services/api'
 
-interface PaymentConfig {
-  upiId: string;
-  upiQRCode: string;
-  bankDetails: {
-    accountName: string;
-    accountNumber: string;
-    ifscCode: string;
-    bankName: string;
-  };
-  pricing: {
-    monthly: number;
-    yearly: number;
-  };
+interface PlansResponse {
+  pricing: { monthly: number; yearly: number }
+  current: { plan: 'free' | 'pro'; status: string; endsAt: string | null; daysLeft: number | null }
+  gatewayEnabled: boolean
 }
 
+declare global {
+  interface Window {
+    Cashfree?: (opts: { mode: 'production' | 'sandbox' }) => { checkout: (o: { paymentSessionId: string; redirectTarget?: string }) => Promise<unknown> }
+  }
+}
+
+const SDK_URL = 'https://sdk.cashfree.com/js/v3/cashfree.js'
+const loadCashfree = () =>
+  new Promise<void>((resolve, reject) => {
+    if (window.Cashfree) return resolve()
+    const existing = document.querySelector(`script[src="${SDK_URL}"]`)
+    const s = (existing as HTMLScriptElement) || document.createElement('script')
+    s.addEventListener('load', () => resolve())
+    s.addEventListener('error', () => reject(new Error('Could not load the payment window')))
+    if (!existing) { s.src = SDK_URL; s.async = true; document.head.appendChild(s) }
+  })
+
+const PRO_FEATURES = [
+  'Unlimited config generation (Free: 10 / month)',
+  'Full-stack bundle ZIP (Docker + CI/CD + Kubernetes)',
+  'One-click AWS deployment & management',
+  'AWS cloud cost analysis',
+  'Vision deploy',
+  'Priority support',
+]
+
 const Payment: React.FC = () => {
-  const navigate = useNavigate();
-  const [config, setConfig] = useState<PaymentConfig | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [subscriptionType, setSubscriptionType] = useState<'monthly' | 'yearly'>('monthly');
-  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'bank_transfer'>('upi');
-  const [transactionId, setTransactionId] = useState('');
-  const [screenshot, setScreenshot] = useState<File | null>(null);
-  const [notes, setNotes] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const navigate = useNavigate()
+  const [data, setData] = useState<PlansResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [plan, setPlan] = useState<'monthly' | 'yearly'>('yearly')
+  const [phone, setPhone] = useState('')
+  const [paying, setPaying] = useState(false)
 
   useEffect(() => {
-    fetchPaymentConfig();
-  }, []);
+    api.get('/payment/plans')
+      .then((r) => setData(r.data.data))
+      .catch(() => toast.error('Could not load plans'))
+      .finally(() => setLoading(false))
+  }, [])
 
-  const fetchPaymentConfig = async () => {
+  if (loading || !data) {
+    return <div className="py-24 text-center text-slate-500 dark:text-gray-400">{loading ? 'Loading plans…' : 'Plans are unavailable right now.'}</div>
+  }
+
+  const { pricing, current } = data
+  const savePct = Math.round((1 - pricing.yearly / (pricing.monthly * 12)) * 100)
+  const phoneOk = /^[6-9]\d{9}$/.test(phone)
+  const isPro = current.plan === 'pro' && current.status !== 'admin'
+
+  const pay = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!phoneOk) return toast.error('Enter a valid 10-digit Indian mobile number')
+    setPaying(true)
     try {
-      const response = await api.get('/payment/config');
-      setConfig(response.data.data);
-    } catch (err) {
-      console.error('Failed to fetch payment config:', err);
-      setError('Failed to load payment configuration');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setScreenshot(e.target.files[0]);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSubmitting(true);
-
-    if (!transactionId.trim()) {
-      setError('Transaction ID is required');
-      setSubmitting(false);
-      return;
-    }
-
-    if (!screenshot) {
-      setError('Please upload payment screenshot');
-      setSubmitting(false);
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('paymentMethod', paymentMethod);
-    formData.append('transactionId', transactionId);
-    formData.append('subscriptionType', subscriptionType);
-    formData.append('screenshot', screenshot);
-    if (notes) formData.append('notes', notes);
-
-    try {
-      await api.post('/payment/submit', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      setSuccess(true);
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 3000);
+      const res = await api.post('/payment/cashfree/order', { subscriptionType: plan, phone })
+      await loadCashfree()
+      const cf = window.Cashfree!({ mode: res.data.data.environment })
+      await cf.checkout({ paymentSessionId: res.data.data.paymentSessionId, redirectTarget: '_self' })
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to submit payment');
-    } finally {
-      setSubmitting(false);
+      toast.error(err.response?.data?.error || err.message || 'Payment could not be started')
+      setPaying(false)
     }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading payment information...</p>
-        </div>
-      </div>
-    );
   }
 
-  if (success) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-900 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Payment Submitted!</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
-            Your payment has been submitted successfully. We will verify it and activate your subscription shortly.
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Redirecting to dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+  const card = (id: 'monthly' | 'yearly', title: string, price: number, suffix: string, badge?: string) => (
+    <button
+      type="button"
+      onClick={() => setPlan(id)}
+      aria-pressed={plan === id}
+      className={`relative text-left p-6 rounded-2xl border-2 transition ${plan === id ? 'border-cyan-500 bg-cyan-500/5 shadow-lg shadow-cyan-500/10' : 'border-slate-200 dark:border-white/10 hover:border-cyan-400/60'}`}
+    >
+      {badge && <span className="absolute -top-3 right-4 px-3 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-cyan-500 to-violet-600 text-white">{badge}</span>}
+      <div className="font-semibold">{title}</div>
+      <div className="mt-2"><span className="font-display text-4xl font-bold">₹{price.toLocaleString('en-IN')}</span><span className="text-slate-500 dark:text-gray-400"> {suffix}</span></div>
+    </button>
+  )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-900 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 mb-8 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Back
-        </button>
+    <div className="max-w-4xl mx-auto">
+      <button onClick={() => navigate(-1)} className="inline-flex items-center text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white mb-6">
+        <ArrowLeft className="w-4 h-4 mr-2" /> Back
+      </button>
 
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-            Upgrade to Premium
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300">
-            Unlock all features and take your DevOps workflow to the next level
-          </p>
+      <h1 className="font-display text-4xl font-bold flex items-center gap-3"><Crown className="w-8 h-8 text-amber-500" /> Upgrade to Pro</h1>
+      <p className="mt-2 text-slate-600 dark:text-gray-300">Pay securely online. Your plan activates automatically the moment payment succeeds.</p>
+
+      {isPro && (
+        <div className="mt-6 card p-4 border-emerald-500/30 text-emerald-700 dark:text-emerald-300">
+          You are on <strong>Pro</strong>{current.endsAt ? <> until {new Date(current.endsAt).toLocaleDateString()} ({current.daysLeft} days left)</> : null}.
+          Paying again adds time on top of your current period — no days are lost.
         </div>
+      )}
+      {current.status === 'expired' && <div className="mt-6 card p-4 text-amber-700 dark:text-amber-300">Your Pro plan has expired. Renew to unlock Pro features again.</div>}
+      {!data.gatewayEnabled && <div className="mt-6 card p-4 text-red-600 dark:text-red-300">Online payments are temporarily unavailable. Please try again later.</div>}
 
-        <div className="grid md:grid-cols-2 gap-8 mb-8">
-          {/* Pricing Cards */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Monthly</h3>
-              <Calendar className="w-6 h-6 text-indigo-600" />
-            </div>
-            <div className="mb-6">
-              <span className="text-4xl font-bold text-gray-900 dark:text-white">₹{config?.pricing.monthly}</span>
-              <span className="text-gray-600 dark:text-gray-400">/month</span>
-            </div>
-            <button
-              onClick={() => setSubscriptionType('monthly')}
-              className={`w-full py-3 rounded-xl font-semibold transition-all ${
-                subscriptionType === 'monthly'
-                  ? 'bg-indigo-600 text-white shadow-lg'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              {subscriptionType === 'monthly' ? 'Selected' : 'Select Monthly'}
-            </button>
+      <div className="mt-8 grid md:grid-cols-5 gap-6">
+        <form onSubmit={pay} className="md:col-span-3 space-y-5">
+          <div className="grid sm:grid-cols-2 gap-4">
+            {card('monthly', 'Monthly', pricing.monthly, '/ month')}
+            {card('yearly', 'Yearly', pricing.yearly, '/ year', savePct > 0 ? `Save ${savePct}%` : undefined)}
           </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border-2 border-indigo-600 relative">
-            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
-              Popular
-            </div>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Yearly</h3>
-              <CreditCard className="w-6 h-6 text-indigo-600" />
-            </div>
-            <div className="mb-6">
-              <span className="text-4xl font-bold text-gray-900 dark:text-white">₹{config?.pricing.yearly}</span>
-              <span className="text-gray-600 dark:text-gray-400">/year</span>
-              <div className="text-sm text-green-600 dark:text-green-400 mt-2">Save 17%</div>
-            </div>
-            <button
-              onClick={() => setSubscriptionType('yearly')}
-              className={`w-full py-3 rounded-xl font-semibold transition-all ${
-                subscriptionType === 'yearly'
-                  ? 'bg-indigo-600 text-white shadow-lg'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              {subscriptionType === 'yearly' ? 'Selected' : 'Select Yearly'}
-            </button>
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium mb-1.5">Mobile number (required by the payment provider)</label>
+            <input id="phone" inputMode="numeric" autoComplete="tel-national" maxLength={10} className="input" placeholder="10-digit mobile number"
+              value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))} aria-invalid={phone.length > 0 && !phoneOk} />
+            {phone.length > 0 && !phoneOk && <p className="mt-1 text-sm text-red-500">Enter a valid 10-digit Indian mobile number.</p>}
           </div>
-        </div>
+          <button disabled={paying || !phoneOk || !data.gatewayEnabled} className="btn-primary w-full inline-flex items-center justify-center disabled:opacity-50">
+            <Lock className="w-4 h-4 mr-2" />
+            {paying ? 'Opening secure checkout…' : `Pay ₹${(plan === 'monthly' ? pricing.monthly : pricing.yearly).toLocaleString('en-IN')} securely`}
+          </button>
+          <p className="text-xs text-slate-500 dark:text-gray-400 flex items-start gap-2"><ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" /> UPI, cards and net banking via Cashfree. We never see or store your card or UPI details.</p>
+        </form>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Payment Details */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Payment Details</h2>
-
-            {/* Payment Method Selection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Payment Method
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => setPaymentMethod('upi')}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    paymentMethod === 'upi'
-                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600'
-                  }`}
-                >
-                  <div className="text-center">
-                    <CreditCard className="w-8 h-8 mx-auto mb-2 text-indigo-600" />
-                    <span className="font-medium text-gray-900 dark:text-white">UPI</span>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setPaymentMethod('bank_transfer')}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    paymentMethod === 'bank_transfer'
-                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600'
-                  }`}
-                >
-                  <div className="text-center">
-                    <CreditCard className="w-8 h-8 mx-auto mb-2 text-indigo-600" />
-                    <span className="font-medium text-gray-900 dark:text-white">Bank Transfer</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* UPI Details */}
-            {paymentMethod === 'upi' && config && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  UPI QR Code
-                </label>
-                <div className="bg-white dark:bg-gray-700 rounded-xl p-4 flex items-center justify-center mb-4">
-                  <img src={config.upiQRCode} alt="UPI QR Code" className="w-48 h-48" />
-                </div>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">UPI ID:</p>
-                  <p className="text-lg font-mono font-semibold text-gray-900 dark:text-white">{config.upiId}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Bank Details */}
-            {paymentMethod === 'bank_transfer' && config && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Bank Account Details
-                </label>
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 space-y-3">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Account Name:</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">{config.bankDetails.accountName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Account Number:</p>
-                    <p className="font-mono font-semibold text-gray-900 dark:text-white">{config.bankDetails.accountNumber}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">IFSC Code:</p>
-                    <p className="font-mono font-semibold text-gray-900 dark:text-white">{config.bankDetails.ifscCode}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Bank Name:</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">{config.bankDetails.bankName}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Payment Form */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Submit Payment</h2>
-
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start">
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" />
-                <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit}>
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Transaction ID *
-                </label>
-                <input
-                  type="text"
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                  placeholder="Enter your transaction ID"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all"
-                  required
-                />
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Payment Screenshot *
-                </label>
-                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-indigo-600 dark:hover:border-indigo-400 transition-colors">
-                  <input
-                    type="file"
-                    id="screenshot"
-                    onChange={handleFileChange}
-                    accept="image/*,.pdf"
-                    className="hidden"
-                    required
-                  />
-                  <label htmlFor="screenshot" className="cursor-pointer">
-                    <Upload className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                    <p className="text-gray-600 dark:text-gray-300 mb-2">
-                      {screenshot ? screenshot.name : 'Click to upload or drag and drop'}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      PNG, JPG, GIF, PDF up to 5MB
-                    </p>
-                  </label>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Notes (Optional)
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any additional notes..."
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all resize-none"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                {submitting ? 'Submitting...' : 'Submit Payment'}
-              </button>
-            </form>
-
-            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>Note:</strong> Your payment will be verified manually. Once verified, your premium subscription will be activated immediately.
-              </p>
-            </div>
-          </div>
-        </div>
+        <aside className="md:col-span-2 card p-5 h-fit" aria-label="Pro features">
+          <h2 className="font-semibold mb-3">Everything in Pro</h2>
+          <ul className="space-y-2.5 text-sm">
+            {PRO_FEATURES.map((f) => <li key={f} className="flex gap-2"><Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />{f}</li>)}
+          </ul>
+        </aside>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Payment;
+export default Payment

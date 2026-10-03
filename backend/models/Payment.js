@@ -15,7 +15,7 @@ const paymentSchema = new mongoose.Schema({
   amount: {
     type: Number,
     required: true,
-    default: 199 // Default subscription price
+    default: 199 // Default subscription price (authoritative prices: services/plans.js)
   },
   currency: {
     type: String,
@@ -23,7 +23,7 @@ const paymentSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['upi', 'bank_transfer'],
+    enum: ['upi', 'bank_transfer', 'cashfree'],
     required: true
   },
   transactionId: {
@@ -37,7 +37,7 @@ const paymentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'verified', 'rejected'],
+    enum: ['pending', 'verified', 'rejected', 'cancelled', 'refunded'],
     default: 'pending'
   },
   subscriptionType: {
@@ -59,6 +59,35 @@ const paymentSchema = new mongoose.Schema({
   notes: {
     type: String,
     trim: true
+  },
+  // Online (gateway) payments
+  gatewayOrderId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  invoiceNumber: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  // the paid period this payment bought (set when it is applied to the subscription)
+  periodStart: { type: Date },
+  periodEnd: { type: Date },
+  refund: {
+    status: { type: String, enum: ['none', 'requested', 'processing', 'refunded', 'failed'], default: 'none' },
+    requestedAt: { type: Date },
+    reason: { type: String, trim: true, maxlength: 500 },
+    amount: { type: Number },
+    refundId: { type: String },
+    processedAt: { type: Date },
+    processedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    subscriptionRevoked: { type: Boolean, default: false }
+  },
+  // true once the paid period has been added to the user's subscription (makes activation idempotent)
+  subscriptionApplied: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

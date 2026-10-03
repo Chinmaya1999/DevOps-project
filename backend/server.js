@@ -28,6 +28,8 @@ const chatRoutes = require('./routes/chat');
 const blogRoutes = require('./routes/blog');
 const costAnalysisRoutes = require('./routes/costAnalysis');
 const toolsRoutes = require('./routes/tools');
+const { auth } = require('./middleware/auth');
+const { requireFeature } = require('./middleware/subscription');
 const { initializeSocket } = require('./socket');
 
 const app = express();
@@ -91,6 +93,8 @@ app.use(cors({
     'User-Agent',
     'X-Requested-With',
     'X-CSRF-Token',
+    'X-GitHub-Token',
+    'X-DockerHub-Pat',
     'X-Anonymous-User-Id'
   ],
   exposedHeaders: ['Content-Length', 'X-Kuma-Revision', 'Set-Cookie'],
@@ -115,7 +119,11 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Body parser middleware
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({
+  limit: '2mb',
+  // keep the exact bytes for webhook signature verification
+  verify: (req, res, buf) => { if (req.originalUrl.startsWith('/api/payment/cashfree/webhook')) req.rawBody = buf; }
+}));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(cookieParser());
 app.use(sanitizeInput);
@@ -150,15 +158,21 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/terraform-templates', terraformTemplateRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/github', githubRoutes);
-app.use('/api/vision', visionRoutes);
-app.use('/api/deployment', deploymentRoutes);
+app.use('/api/vision', auth, requireFeature('vision'), visionRoutes);
+app.use('/api/deployment', auth, requireFeature('deployments'), deploymentRoutes);
 app.use('/api/dockerhub', dockerHubRoutes);
-app.use('/api/deployments', deploymentManagementRoutes);
+// Existing deployments can always be listed / viewed / deleted; operating them (SSH actions) needs Pro
+const viewOrDelete = (req, res, next) => {
+  const isList = req.method === 'GET' && /^\/?$/.test(req.path);
+  const isOne = (req.method === 'GET' || req.method === 'DELETE') && /^\/[^/]+\/?$/.test(req.path);
+  return isList || isOne ? next() : requireFeature('deployments')(req, res, next);
+};
+app.use('/api/deployments', auth, viewOrDelete, deploymentManagementRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/blogs', blogRoutes);
-app.use('/api/cost-analysis', costAnalysisRoutes);
+app.use('/api/cost-analysis', auth, requireFeature('costAnalysis'), costAnalysisRoutes);
 app.use('/api/tools', toolsRoutes);
 
 // Health check endpoint

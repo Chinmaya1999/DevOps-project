@@ -11,8 +11,11 @@ const Landing = lazy(() => import('./pages/Landing/Landing'))
 const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'))
 const Generator = lazy(() => import('./pages/Generator/Generator'))
 const History = lazy(() => import('./pages/History/History'))
-const TerraformDemos = lazy(() => import('./pages/TerraformDemos/TerraformDemos'))
 const Bundle = lazy(() => import('./pages/Bundle/Bundle'))
+const Security = lazy(() => import('./pages/Security/Security'))
+const Billing = lazy(() => import('./pages/Billing/Billing'))
+const Invoice = lazy(() => import('./pages/Billing/Invoice'))
+const Help = lazy(() => import('./pages/Help/Help'))
 const Toolbox = lazy(() => import('./pages/Toolbox/Toolbox'))
 const Validator = lazy(() => import('./pages/Validator/Validator'))
 const DevOpsDocs = lazy(() => import('./pages/DevOpsDocs/DevOpsDocs'))
@@ -25,6 +28,7 @@ const Vision = lazy(() => import('./pages/Vision/Vision'))
 const VisionSuccess = lazy(() => import('./pages/Vision/VisionSuccess'))
 const Deployments = lazy(() => import('./pages/Deployments/Deployments'))
 const Payment = lazy(() => import('./pages/Payment/Payment'))
+const PaymentStatus = lazy(() => import('./pages/Payment/PaymentStatus'))
 const PaymentVerification = lazy(() => import('./pages/Admin/PaymentVerification'))
 const Contact = lazy(() => import('./pages/Contact/Contact'))
 const CloudCostAnalysis = lazy(() => import('./components/CloudCostAnalysis'))
@@ -89,7 +93,10 @@ function App() {
         <Route path="roadmap" element={<Roadmap />} />
         <Route path="resources/:type/:id" element={<ResourceDetail />} />
         <Route path="admin" element={<Admin />} />
-        <Route path="terraform-demos" element={<TerraformDemos />} />
+        <Route path="help" element={<Help />} />
+        <Route path="security" element={<Security />} />
+        <Route path="billing" element={<Billing />} />
+        <Route path="billing/invoice/:id" element={<Invoice />} />
         <Route path="bundle" element={<Bundle />} />
         <Route path="toolbox" element={<Toolbox />} />
         <Route path="validator" element={<Validator />} />
@@ -99,6 +106,7 @@ function App() {
         <Route path="vision/success" element={<VisionSuccess />} />
         <Route path="deployments" element={<Deployments />} />
         <Route path="payment" element={<Payment />} />
+        <Route path="payment/status" element={<PaymentStatus />} />
         <Route path="admin/payments" element={<PaymentVerification />} />
         <Route path="blogs" element={<BlogList />} />
         <Route path="blogs/create" element={<CreateBlog />} />

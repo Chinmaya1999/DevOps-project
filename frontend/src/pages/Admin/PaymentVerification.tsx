@@ -13,7 +13,9 @@ interface Payment {
   paymentMethod: string;
   transactionId: string;
   screenshotUrl: string;
-  status: 'pending' | 'verified' | 'rejected';
+  status: 'pending' | 'verified' | 'rejected' | 'cancelled' | 'refunded';
+  refund?: { status: 'none' | 'requested' | 'processing' | 'refunded' | 'failed'; reason?: string; requestedAt?: string };
+  invoiceNumber?: string;
   subscriptionType: string;
   notes?: string;
   rejectionReason?: string;
@@ -152,6 +154,22 @@ const PaymentVerification: React.FC = () => {
     }
   };
 
+  const handleRefund = async (payment: Payment) => {
+    if (!window.confirm(`Refund ₹${payment.amount} to ${payment.user.email}?\n\nThe money goes back through Cashfree and the Pro time from this payment is removed. This cannot be undone.`)) return;
+    setProcessing(true);
+    try {
+      await api.post(`/payment/${payment._id}/refund`, { note: payment.refund?.reason });
+      setShowModal(false);
+      setSelectedPayment(null);
+      fetchPayments();
+      fetchStats();
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Refund failed');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const openModal = (payment: Payment) => {
     setSelectedPayment(payment);
     setShowModal(true);
@@ -173,6 +191,8 @@ const PaymentVerification: React.FC = () => {
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
       case 'rejected':
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      case 'refunded':
+        return 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
     }
@@ -500,6 +520,30 @@ const PaymentVerification: React.FC = () => {
                           {selectedPayment.verifiedAt ? new Date(selectedPayment.verifiedAt).toLocaleString() : 'N/A'}
                         </span>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Refunds (online payments only) */}
+                {selectedPayment.paymentMethod === 'cashfree' && (selectedPayment.status === 'verified' || selectedPayment.status === 'refunded') && (
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Refund</h3>
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
+                      {selectedPayment.refund?.status === 'requested' && (
+                        <p className="text-sm text-amber-700 dark:text-amber-300">Customer requested a refund{selectedPayment.refund.reason ? `: “${selectedPayment.refund.reason}”` : '.'}</p>
+                      )}
+                      {selectedPayment.refund?.status === 'processing' && <p className="text-sm text-amber-700 dark:text-amber-300">Refund is processing at the bank.</p>}
+                      {selectedPayment.status === 'refunded' && selectedPayment.refund?.status === 'refunded' && <p className="text-sm text-gray-700 dark:text-gray-200">This payment was refunded.</p>}
+                      {selectedPayment.refund?.status === 'failed' && <p className="text-sm text-red-600 dark:text-red-300">The last refund attempt failed — you can retry.</p>}
+                      {selectedPayment.status === 'verified' && (
+                        <button
+                          onClick={() => handleRefund(selectedPayment)}
+                          disabled={processing}
+                          className="px-4 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 disabled:opacity-50"
+                        >
+                          {processing ? 'Processing…' : 'Refund this payment'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}

@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { api } from '../services/api'
-import toast from 'react-hot-toast'
+import { api, setCsrfToken } from '../services/api'
 
 interface User {
   id: string
@@ -16,16 +15,30 @@ interface User {
     trialEndDate?: string
     subscriptionType?: string
   }
+  plan?: {
+    plan: 'free' | 'pro'
+    status: string
+    label: string
+    endsAt: string | null
+    daysLeft: number | null
+    generationsPerMonth: number | null
+    features: Record<string, boolean>
+  }
+  workExperience?: string
+  domains?: string[]
+  twoFactorEnabled?: boolean
 }
+
+export type LoginResult = { twoFactorRequired: false } | { twoFactorRequired: true; challenge: string }
 
 interface AuthContextType {
   user: User | null
   loading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<LoginResult>
+  verifyTwoFactor: (challenge: string, factor: { code?: string; recoveryCode?: string }) => Promise<{ recoveryCodesLeft?: number }>
   register: (username: string, email: string, password: string, workExperience?: string, domains?: string[]) => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
-  setToken: (token: string) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -42,82 +55,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // On load, ask the server who we are. The session cookie is HttpOnly, so this is the only way to know.
   useEffect(() => {
-    const initializeAuth = async () => {
-      // Check for OAuth token in URL (exclude reset-password page)
-      const isResetPasswordPage = window.location.pathname === '/reset-password'
-      const urlParams = new URLSearchParams(window.location.search)
-      const oauthToken = urlParams.get('token')
-      const isGoogle = urlParams.get('google') === 'true'
-      const isGithub = urlParams.get('github') === 'true'
-      const isOAuth = isGoogle || isGithub
-
-      console.log('AuthContext: Initializing auth', { oauthToken, isGoogle, isGithub, isOAuth, currentPath: window.location.pathname, isResetPasswordPage })
-
-      const token = (!isResetPasswordPage && oauthToken) || localStorage.getItem('token') || sessionStorage.getItem('token')
-      
-      if (token) {
-        console.log('AuthContext: Token found, storing and fetching profile')
-        // Store token in both localStorage and sessionStorage
-        localStorage.setItem('token', token)
-        sessionStorage.setItem('token', token)
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-        
-        // Fetch user profile
-        await fetchUserProfile()
-        
-        // Show success toast and clean URL if it was OAuth
-        if (isOAuth) {
-          console.log('AuthContext: OAuth login successful')
-          if (isGoogle) {
-            toast.success('Google login successful!')
-          } else if (isGithub) {
-            toast.success('GitHub login successful!')
-          }
-          // Clean URL parameters - use replaceState to avoid page reload
-          const cleanUrl = window.location.pathname
-          window.history.replaceState({}, document.title, cleanUrl)
-        }
-      } else {
-        console.log('AuthContext: No token found')
-        setLoading(false)
-      }
-    }
-
-    initializeAuth()
+    fetchUserProfile()
   }, [])
 
   const fetchUserProfile = async () => {
     try {
-      console.log('AuthContext: Fetching user profile')
       const response = await api.get('/auth/profile')
-      console.log('AuthContext: User profile fetched successfully', response.data.user)
+      setCsrfToken(response.data.csrfToken || null)
       setUser(response.data.user)
-    } catch (error) {
-      console.error('AuthContext: Failed to fetch user profile:', error)
-      // Remove token from both storage locations on error
-      localStorage.removeItem('token')
-      sessionStorage.removeItem('token')
-      delete api.defaults.headers.common['Authorization']
-      toast.error('Failed to authenticate. Please try logging in again.')
+    } catch {
+      // 401 = not signed in (normal for visitors); anything else also leaves us signed out
+      setCsrfToken(null)
+      setUser(null)
     } finally {
       setLoading(false)
     }
   }
 
-  const login = async (email: string, password: string) => {
-    try {
-      const response = await api.post('/auth/login', { email, password })
-      const { user: userData, token } = response.data
-      
-      // Store token in both localStorage and sessionStorage
-      localStorage.setItem('token', token)
-      sessionStorage.setItem('token', token)
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      setUser(userData)
-    } catch (error: any) {
-      throw error
-    }
+  const login = async (email: string, password: string): Promise<LoginResult> => {
+    const response = await api.post('/auth/login', { email, password })
+    if (response.data.twoFactorRequired) return { twoFactorRequired: true, challenge: response.data.challenge }
+    setCsrfToken(response.data.csrfToken)
+    setUser(response.data.user)
+    return { twoFactorRequired: false }
+  }
+
+  const verifyTwoFactor = async (challenge: string, factor: { code?: string; recoveryCode?: string }) => {
+    const response = await api.post('/auth/2fa/verify', { challenge, ...factor })
+    setCsrfToken(response.data.csrfToken)
+    setUser(response.data.user)
+    return { recoveryCodesLeft: response.data.recoveryCodesLeft as number | undefined }
   }
 
   const register = async (username: string, email: string, password: string, workExperience?: string, domains?: string[]) => {
@@ -127,31 +96,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Just return the response data
       return response.data
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Registration failed')
+      throw new Error(error.response?.data?.details || error.response?.data?.error || 'Registration failed')
     }
   }
 
-  const logout = () => {
-    // Remove token from both localStorage and sessionStorage
-    localStorage.removeItem('token')
-    sessionStorage.removeItem('token')
-    delete api.defaults.headers.common['Authorization']
+  const logout = async () => {
+    try { await api.post('/auth/logout') } catch { /* cookie expires on its own */ }
+    setCsrfToken(null)
     setUser(null)
   }
 
   const refreshUser = async () => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      await fetchUserProfile()
-    }
-  }
-
-  const setToken = (token: string) => {
-    // Store token in both localStorage and sessionStorage
-    localStorage.setItem('token', token)
-    sessionStorage.setItem('token', token)
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    fetchUserProfile()
+    await fetchUserProfile()
   }
 
   const value = {
@@ -161,7 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     register,
     logout,
     refreshUser,
-    setToken
+    verifyTwoFactor
   }
 
   return (

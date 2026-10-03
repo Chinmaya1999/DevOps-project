@@ -26,4 +26,13 @@ router.post('/troubleshoot', (req, res) => {
   }
 });
 
+// Guided help: areas -> symptoms -> solution
+router.get('/catalog', (req, res) => res.json({ success: true, data: Troubleshooter.catalog() }));
+
+router.get('/solution/:id', (req, res) => {
+  const found = Troubleshooter.byId(String(req.params.id));
+  if (!found) return res.status(404).json({ error: 'Unknown issue' });
+  res.json({ success: true, data: found });
+});
+
 module.exports = router;

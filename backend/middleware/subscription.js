@@ -1,58 +1,62 @@
-const checkSubscription = (req, res, next) => {
+const GeneratedFile = require('../models/GeneratedFile');
+const { getEffectivePlan, PLANS } = require('../services/plans');
+
+/** Attach the user's effective plan to the request (run after `auth`). */
+const attachPlan = (req, res, next) => {
+  req.plan = getEffectivePlan(req.user);
+  next();
+};
+
+/**
+ * Gate a route by feature, e.g. requireFeature('deployments').
+ * Responds 403 { code: 'UPGRADE_REQUIRED' } so the frontend can show an upgrade prompt.
+ */
+const requireFeature = (feature) => (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'User not authenticated' });
+  const plan = getEffectivePlan(req.user);
+  req.plan = plan;
+  if (plan.features[feature]) return next();
+  const expired = plan.status === 'expired';
+  return res.status(403).json({
+    error: expired ? 'Subscription expired' : 'Pro plan required',
+    code: 'UPGRADE_REQUIRED',
+    feature,
+    message: expired
+      ? 'Your Pro subscription has expired. Renew to use this feature.'
+      : 'This feature is part of the Pro plan. Upgrade to unlock it.',
+  });
+};
+
+/** Free plan: limited saved generations per calendar month. Pro/admin: unlimited. */
+const enforceGenerationQuota = async (req, res, next) => {
   try {
-    const user = req.user;
-    
-    if (!user) {
-      return res.status(401).json({ error: 'User not authenticated' });
-    }
+    const plan = getEffectivePlan(req.user);
+    req.plan = plan;
+    const limit = PLANS[plan.plan].generationsPerMonth;
+    if (limit === Infinity) return next();
 
-    const now = new Date();
-    const subscription = user.subscription;
-
-    // Check if user has any active subscription
-    if (subscription.type === 'free') {
-      return res.status(403).json({ 
-        error: 'Premium subscription required',
-        message: 'Please upgrade to premium to access this feature'
+    const monthStart = new Date();
+    monthStart.setUTCDate(1);
+    monthStart.setUTCHours(0, 0, 0, 0);
+    const used = await GeneratedFile.countDocuments({ userId: req.user._id, createdAt: { $gte: monthStart } });
+    if (used >= limit) {
+      return res.status(403).json({
+        error: 'Monthly limit reached',
+        code: 'UPGRADE_REQUIRED',
+        feature: 'generations',
+        message: `The Free plan includes ${limit} generations per month. Upgrade to Pro for unlimited.`,
+        used,
+        limit,
       });
     }
-
-    // Check trial period
-    if (subscription.type === 'trial') {
-      if (subscription.trialEndDate && now > subscription.trialEndDate) {
-        // Trial expired, check if they have paid subscription
-        if (subscription.endDate && now <= subscription.endDate) {
-          // Move to premium
-          subscription.type = 'premium';
-          user.save().catch(err => console.error('Error updating subscription:', err));
-        } else {
-          return res.status(403).json({ 
-            error: 'Trial period expired',
-            message: 'Your trial period has ended. Please subscribe to continue using premium features'
-          });
-        }
-      }
-    }
-
-    // Check premium subscription expiry
-    if (subscription.type === 'premium') {
-      if (subscription.endDate && now > subscription.endDate) {
-        subscription.type = 'free';
-        user.save().catch(err => console.error('Error updating subscription:', err));
-        return res.status(403).json({ 
-          error: 'Subscription expired',
-          message: 'Your subscription has expired. Please renew to continue using premium features'
-        });
-      }
-    }
-
-    // User has active subscription
-    req.subscription = subscription;
     next();
-  } catch (error) {
-    console.error('Subscription check error:', error);
-    res.status(500).json({ error: 'Error checking subscription status' });
+  } catch (e) {
+    console.error('Quota check error:', e.message);
+    res.status(500).json({ error: 'Could not verify plan limits' });
   }
 };
 
-module.exports = { checkSubscription };
+// Backwards-compatible name: "any active paid access"
+const checkSubscription = requireFeature('deployments');
+
+module.exports = { attachPlan, requireFeature, enforceGenerationQuota, checkSubscription };

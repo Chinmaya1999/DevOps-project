@@ -1,3 +1,4 @@
+import { loadDeploymentSettings } from '../../utils/secretStore';
 import React, { useEffect, useState } from 'react';
 import { Card, Steps, Button, Form, Input, Select, Radio, Space, message, Spin, Alert, Progress, Tag, Upload, Switch } from 'antd';
 import { RocketOutlined, EnvironmentOutlined, UploadOutlined, CloudUploadOutlined, CheckCircleOutlined } from '@ant-design/icons';
@@ -31,10 +32,9 @@ const Vision: React.FC = () => {
 
   useEffect(() => {
     try {
-      const savedSettings = localStorage.getItem('infraPilotDeploymentSettings');
-      if (!savedSettings) return;
+      const parsed = loadDeploymentSettings();
+      if (Object.keys(parsed).length === 0) return;
 
-      const parsed = JSON.parse(savedSettings);
       if (parsed.githubToken) {
         setDockerHubToken(parsed.githubToken);
       }
@@ -750,7 +750,7 @@ const Vision: React.FC = () => {
           await new Promise(resolve => setTimeout(resolve, 1500));
         }
 
-        const savedSettings = JSON.parse(localStorage.getItem('infraPilotDeploymentSettings') || '{}');
+        const savedSettings = loadDeploymentSettings();
         const deploymentConfig = {
           host: values.ec2Host || savedSettings.publicIpv4Address || null,
           username: values.ec2Username || savedSettings.ec2Username || null,
@@ -765,7 +765,6 @@ const Vision: React.FC = () => {
           enableSSL: values.enableSSL && !!(values.domainName || savedSettings.domainName)
         };
 
-        console.log('Sending AWS EC2 deployment config:', deploymentConfig);
 
         const response = await api.post('/deployment/deploy', deploymentConfig);
 

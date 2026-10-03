@@ -51,3 +51,15 @@ test('troubleshooter diagnoses real-world errors', () => {
   assert.throws(() => Troubleshooter.diagnose('   '));
   assert.ok(Troubleshooter.RULE_COUNT >= 25);
 });
+
+test('guided catalog covers every rule exactly once and each solution resolves', () => {
+  const catalog = Troubleshooter.catalog();
+  const ids = catalog.flatMap((a) => a.issues.map((i) => i.id));
+  assert.strictEqual(ids.length, Troubleshooter.RULE_COUNT);
+  assert.strictEqual(new Set(ids).size, ids.length, 'duplicate rule ids');
+  for (const id of ids) {
+    const sol = Troubleshooter.byId(id);
+    assert.ok(sol && sol.cause && sol.steps.length >= 2, id);
+  }
+  assert.strictEqual(Troubleshooter.byId('nope'), null);
+});

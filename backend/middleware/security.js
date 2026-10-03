@@ -38,15 +38,18 @@ const tokenFromHeaders = (req, res, next) => {
   next();
 };
 
-const limiter = (max, windowMin, message) =>
-  rateLimit({ windowMs: windowMin * 60 * 1000, max, message: { error: message }, standardHeaders: true, legacyHeaders: false });
+const limiter = (max, windowMin, message, keyGenerator) =>
+  rateLimit({ windowMs: windowMin * 60 * 1000, max, message: { error: message }, standardHeaders: true, legacyHeaders: false, ...(keyGenerator ? { keyGenerator } : {}) });
 
 const limiters = {
   otpVerify: limiter(10, 15, 'Too many verification attempts. Please try again later.'),
   otpResend: limiter(3, 15, 'Too many code requests. Please try again later.'),
   passwordReset: limiter(5, 15, 'Too many password reset attempts. Please try again later.'),
   deployment: limiter(30, 15, 'Too many deployment requests. Please slow down.'),
+  twoFactor: limiter(15, 15, 'Too many two-factor attempts. Please try again later.'),
   upload: limiter(10, 60, 'Too many uploads. Please try again later.'),
+  // authenticated route: limit per account so users sharing an IP don't block each other
+  checkout: limiter(10, 15, 'Too many checkout attempts. Please try again later.', (req) => String(req.user?._id || req.ip)),
 };
 
 /** Fail fast at boot if secrets are missing or weak. */
