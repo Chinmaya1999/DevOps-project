@@ -44,7 +44,7 @@ const AdminAudit: React.FC = () => {
           <input className="input !pl-9 !py-2" placeholder="Search by admin or target" aria-label="Search audit log" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <select aria-label="Action type" className="input !py-2 !px-3 !w-auto" value={action} onChange={(e) => setAction(e.target.value)}>
-          <option value="">All actions</option><option value="user.">Users</option><option value="payment.">Payments</option><option value="message.">Messages</option>
+          <option value="">All actions</option><option value="user.">Users</option><option value="payment.">Payments</option><option value="message.">Messages</option><option value="settings.">Settings</option>
         </select>
       </div>
       <div className="mt-4 card overflow-hidden">
