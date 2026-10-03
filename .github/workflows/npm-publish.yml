@@ -128,12 +128,14 @@ jobs:
           ENV_FILE: ${{ secrets.ENV_FILE }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           DATA_ENCRYPTION_KEY: ${{ secrets.DATA_ENCRYPTION_KEY }}
+          CASHFREE_APP_ID: ${{ secrets.CASHFREE_APP_ID }}
+          CASHFREE_SECRET_KEY: ${{ secrets.CASHFREE_SECRET_KEY }}
         run: |
           # Required secrets must exist, otherwise the backend refuses to start in production
           [ ${#JWT_SECRET} -ge 32 ] || { echo "::error::Repository secret JWT_SECRET is missing or shorter than 32 characters"; exit 1; }
           [[ "$DATA_ENCRYPTION_KEY" =~ ^[0-9a-fA-F]{64}$ ]] || { echo "::error::Repository secret DATA_ENCRYPTION_KEY must be 64 hex characters"; exit 1; }
           {
-            printf '%s\n' "$ENV_FILE" | grep -vE '^(JWT_SECRET|DATA_ENCRYPTION_KEY|NODE_ENV|TRUST_PROXY|FRONTEND_URL|API_PUBLIC_URL|COOKIE_SECURE)='
+            printf '%s\n' "$ENV_FILE" | grep -vE '^(JWT_SECRET|DATA_ENCRYPTION_KEY|NODE_ENV|TRUST_PROXY|FRONTEND_URL|API_PUBLIC_URL|COOKIE_SECURE|CASHFREE_APP_ID|CASHFREE_SECRET_KEY|CASHFREE_ENV)='
             echo "JWT_SECRET=$JWT_SECRET"
             echo "DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY"
             echo "NODE_ENV=production"
@@ -141,6 +143,12 @@ jobs:
             echo "FRONTEND_URL=https://deploydojo.cmcloud.online"
             echo "API_PUBLIC_URL=https://api.cmcloud.online"
             echo "COOKIE_SECURE=true"
+            # Online payments (optional): enabled only when both repository secrets exist
+            if [ -n "$CASHFREE_APP_ID" ] && [ -n "$CASHFREE_SECRET_KEY" ]; then
+              echo "CASHFREE_APP_ID=$CASHFREE_APP_ID"
+              echo "CASHFREE_SECRET_KEY=$CASHFREE_SECRET_KEY"
+              echo "CASHFREE_ENV=production"
+            fi
           } > env.prod
           B64=$(base64 -w0 env.prod)
           echo "::add-mask::$B64"
