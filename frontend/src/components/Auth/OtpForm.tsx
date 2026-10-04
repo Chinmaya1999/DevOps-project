@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Loader2, MailCheck } from 'lucide-react'
+import { AlertTriangle, Loader2, MailCheck } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../services/api'
 
@@ -49,7 +49,22 @@ const OtpForm: React.FC<{ email: string; sendOnMount?: boolean; onVerified: () =
     <form onSubmit={verify} className="space-y-5">
       <div className="flex items-start gap-3 p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-sm">
         <MailCheck className="w-5 h-5 text-cyan-600 dark:text-cyan-300 shrink-0 mt-0.5" />
-        <p>We sent a 6-digit code to <strong>{email}</strong>. It expires in 10 minutes.</p>
+        <div>
+          <p className="font-semibold">Check your inbox</p>
+          <p className="mt-0.5">We sent a 6-digit code to <strong className="break-all">{email}</strong>. It expires in 10 minutes.</p>
+        </div>
+      </div>
+      <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-sm">
+        <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-300 shrink-0 mt-0.5" />
+        <div>
+          <p className="font-semibold">Can't find the email?</p>
+          <ul className="mt-1 list-disc pl-4 space-y-0.5 text-slate-700 dark:text-gray-300">
+            <li>Check your <strong>Spam</strong> or <strong>Junk</strong> folder. If it's there, mark it "Not spam".</li>
+            <li>Look in the <strong>Promotions</strong> or <strong>Updates</strong> tab (Gmail).</li>
+            <li>Wait a minute, delivery can be slightly delayed.</li>
+            <li>Still nothing? Use "Resend code" below, or check you typed your email correctly.</li>
+          </ul>
+        </div>
       </div>
       <div>
         <label htmlFor="otp" className="block text-sm font-medium mb-1.5">Verification code</label>
