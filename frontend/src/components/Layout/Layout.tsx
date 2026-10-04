@@ -248,7 +248,7 @@ const Layout: React.FC = () => {
     { name: 'Vision - One-Click Deploy', href: '/vision', icon: Rocket, pro: true },
     { name: 'Cloud Cost Analysis', href: '/cloud-cost-analysis', icon: DollarSign, pro: true },
     { name: 'Deployments', href: '/deployments', icon: Server, pro: true },
-    { name: 'GitHub Integration', href: '/github', icon: Github },
+    { name: 'GitHub Integration', href: '/github', icon: Github, pro: true },
     { name: 'Full-stack Bundle (ZIP)', href: '/bundle', icon: Package, pro: true },
     { name: 'Jenkins Pipeline', href: '/generator/jenkins', icon: Server },
     { name: 'GitHub Actions', href: '/generator/github-actions', icon: Zap },
@@ -270,6 +270,14 @@ const Layout: React.FC = () => {
   const isPro = user?.plan?.plan === 'pro'
   // hide the upgrade link once the user is already on Pro
   const visibleNav = navigation.filter((i) => !(i.href === '/payment' && isPro))
+
+  const gateProItem = (e: React.MouseEvent, item: { name: string; pro?: boolean }) => {
+    if (item.pro && !isPro) {
+      e.preventDefault()
+      setSidebarOpen(false)
+      setUpgradeInfo({ message: `${item.name} is a Pro feature. Subscribe to Pro to unlock it, along with every other Pro tool.` })
+    }
+  }
 
   const adminNavigation = [
     { name: 'Admin panel', href: '/admin', icon: Settings },
@@ -319,7 +327,7 @@ const Layout: React.FC = () => {
                   className={`sidebar-item ${
                     isActive(item.href) ? 'sidebar-item-active' : 'sidebar-item-inactive'
                   }`}
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={(e) => { setSidebarOpen(false); gateProItem(e, item) }}
                 >
                   <Icon className="w-5 h-5 mr-3" />
                   {item.name}
@@ -410,6 +418,7 @@ const Layout: React.FC = () => {
                   className={`sidebar-item ${
                     isActive(item.href) ? 'sidebar-item-active' : 'sidebar-item-inactive'
                   }`}
+                  onClick={(e) => gateProItem(e, item)}
                 >
                   <Icon className="w-5 h-5 mr-3" />
                   {item.name}
@@ -959,7 +968,7 @@ const Layout: React.FC = () => {
             <p className="mt-2 text-slate-600 dark:text-gray-300">{upgradeInfo.message || 'This feature is part of the Pro plan.'}</p>
             <div className="mt-6 flex gap-3">
               <button onClick={() => setUpgradeInfo(null)} className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-gray-200">Not now</button>
-              <button onClick={() => { setUpgradeInfo(null); navigate('/payment') }} className="flex-1 btn-primary">See plans</button>
+              <button onClick={() => { setUpgradeInfo(null); navigate('/payment') }} className="flex-1 btn-primary">Subscribe now</button>
             </div>
           </div>
         </div>
