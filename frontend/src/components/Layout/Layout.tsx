@@ -1,50 +1,24 @@
 import ThemeToggle from '../UI/ThemeToggle'
 import { loadDeploymentSettings, saveDeploymentSettings } from '../../utils/secretStore'
 import React, { useState, useRef, useEffect } from 'react'
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
 import {
-  History,
   LogOut,
   Menu,
   X,
-  Home,
-  BarChart3,
-  Zap,
-  Shield,
-  Cloud,
-  Server,
-  Package,
-  CheckCircle,
-  Container,
-  Terminal,
-  Code,
-  FileText,
   ChevronDown,
-  ChevronRight,
-  BookOpen,
-  Settings,
   User,
   Camera,
   Edit3,
   Crown,
   ShieldCheck,
-  Github,
-  Rocket,
-  CreditCard,
-  MessageSquare,
-  Map,
-  DollarSign,
-  LifeBuoy,
-  Receipt,
-  GraduationCap,
 } from 'lucide-react'
-import Logo from '../UI/Logo'
+import Sidebar from './Sidebar'
 
 const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [scriptsDropdownOpen, setScriptsDropdownOpen] = useState(false)
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
   const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [subscriptionPopupOpen, setSubscriptionPopupOpen] = useState(false)
@@ -243,33 +217,9 @@ const Layout: React.FC = () => {
     }
   }, [])
 
-  const navigation: { name: string; href: string; icon: React.ElementType; pro?: boolean }[] = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Vision - One-Click Deploy', href: '/vision', icon: Rocket, pro: true },
-    { name: 'Cloud Cost Analysis', href: '/cloud-cost-analysis', icon: DollarSign, pro: true },
-    { name: 'Deployments', href: '/deployments', icon: Server, pro: true },
-    { name: 'GitHub Integration', href: '/github', icon: Github, pro: true },
-    { name: 'Full-stack Bundle (ZIP)', href: '/bundle', icon: Package, pro: true },
-    { name: 'Jenkins Pipeline', href: '/generator/jenkins', icon: Server },
-    { name: 'GitHub Actions', href: '/generator/github-actions', icon: Zap },
-    { name: 'Ansible Playbooks', href: '/generator/ansible', icon: Shield },
-    { name: 'Kubernetes YAML', href: '/generator/kubernetes', icon: Cloud },
-    { name: 'Terraform IaC', href: '/generator/terraform', icon: Package },
-    { name: 'Dockerfile', href: '/generator/dockerfile', icon: Container },
-    { name: 'DevOps Documentation', href: '/devops-docs', icon: BookOpen },
-    { name: 'Learn DevOps', href: '/learn', icon: GraduationCap },
-    { name: 'Help Desk', href: '/help', icon: LifeBuoy },
-    { name: 'DevOps Toolbox', href: '/toolbox', icon: Terminal },
-    { name: 'Validator', href: '/validator', icon: CheckCircle },
-    { name: 'History', href: '/history', icon: History },
-    { name: 'Billing', href: '/billing', icon: Receipt },
-    { name: 'Security', href: '/security', icon: ShieldCheck },
-    { name: 'Upgrade to Pro', href: '/payment', icon: CreditCard },
-  ]
-
   const isPro = user?.plan?.plan === 'pro'
-  // hide the upgrade link once the user is already on Pro
-  const visibleNav = navigation.filter((i) => !(i.href === '/payment' && isPro))
+  const planDays = user?.plan?.daysLeft
+  const planLabel = planDays !== null && planDays !== undefined ? `${planDays} days left` : undefined
 
   const gateProItem = (e: React.MouseEvent, item: { name: string; pro?: boolean }) => {
     if (item.pro && !isPro) {
@@ -279,215 +229,29 @@ const Layout: React.FC = () => {
     }
   }
 
-  const adminNavigation = [
-    { name: 'Admin panel', href: '/admin', icon: Settings },
-
-  ]
-
-  const scriptsSubmenu = [
-    { name: 'Bash Script', href: '/generator/bash', icon: Terminal },
-    { name: 'Python Script', href: '/generator/python', icon: FileText },
-   
-  ]
-  
-
-  const isActive = (href: string) => {
-    if (href === '/dashboard') {
-      return location.pathname === '/' || location.pathname === '/dashboard'
-    }
-    return location.pathname.startsWith(href)
-  }
-
-  const isScriptsActive = () => {
-    return scriptsSubmenu.some(item => location.pathname.startsWith(item.href))
-  }
+  const isAdmin = user?.role === 'admin'
 
   return (
     <div className="min-h-screen bg-secondary-50 dark:bg-transparent">
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-secondary-900/80" onClick={() => setSidebarOpen(false)} />
-        <div className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-secondary-800 shadow-xl">
-          <div className="flex items-center justify-between p-4 border-b border-secondary-200 dark:border-secondary-700">
-            <Logo size={34} />
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="p-1 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-200px)]">
-            {visibleNav.map((item) => {
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`sidebar-item ${
-                    isActive(item.href) ? 'sidebar-item-active' : 'sidebar-item-inactive'
-                  }`}
-                  onClick={(e) => { setSidebarOpen(false); gateProItem(e, item) }}
-                >
-                  <Icon className="w-5 h-5 mr-3" />
-                  {item.name}
-                  {item.pro && !isPro && <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400/90 text-amber-950">PRO</span>}
-                </Link>
-              )
-            })}
-            
-            {/* Admin Menu - Only show for admin users */}
-            {user?.role === 'admin' && (
-              <div className="space-y-1">
-                {adminNavigation.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={`sidebar-item ${
-                        isActive(item.href) ? 'sidebar-item-active' : 'sidebar-item-inactive'
-                      }`}
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <Icon className="w-5 h-5 mr-3" />
-                      {item.name}
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-            
-            {/* Scripts Dropdown */}
-            <div className="space-y-1">
-              <button
-                onClick={() => setScriptsDropdownOpen(!scriptsDropdownOpen)}
-                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  isScriptsActive() 
-                    ? 'bg-primary-100 text-primary-700 dark:bg-gradient-to-r dark:from-cyan-500/20 dark:to-violet-500/20 dark:text-cyan-200 dark:ring-1 dark:ring-cyan-400/30' 
-                    : 'text-secondary-600 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:bg-secondary-700'
-                }`}
-              >
-                <Code className="w-5 h-5 mr-3" />
-                Scripts
-                {scriptsDropdownOpen ? (
-                  <ChevronDown className="w-4 h-4 ml-auto" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 ml-auto" />
-                )}
-              </button>
-              
-              {scriptsDropdownOpen && (
-                <div className="ml-8 space-y-1">
-                  {scriptsSubmenu.map((item) => {
-                    const Icon = item.icon
-                    return (
-                      <Link
-                        key={item.name}
-                        to={item.href}
-                        className={`sidebar-item ${
-                          isActive(item.href) ? 'sidebar-item-active' : 'sidebar-item-inactive'
-                        }`}
-                        onClick={() => setSidebarOpen(false)}
-                      >
-                        <Icon className="w-4 h-4 mr-3" />
-                        {item.name}
-                      </Link>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </nav>
+        <div className="fixed inset-y-0 left-0 w-72 bg-white dark:bg-ink-900 shadow-xl">
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="absolute right-3 top-4 z-10 p-1.5 rounded-lg hover:bg-secondary-100 dark:hover:bg-white/10"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <Sidebar isPro={isPro} isAdmin={isAdmin} planLabel={planLabel} onProGate={gateProItem} onNavigate={() => setSidebarOpen(false)} />
         </div>
       </div>
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:block">
         <div className="h-full bg-white dark:bg-ink-900/90 dark:backdrop-blur-xl border-r border-secondary-200 dark:border-white/10">
-          <div className="flex items-center p-6 border-b border-secondary-200 dark:border-secondary-700">
-            <Logo size={38} />
-          </div>
-          <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-200px)]">
-            {visibleNav.map((item) => {
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`sidebar-item ${
-                    isActive(item.href) ? 'sidebar-item-active' : 'sidebar-item-inactive'
-                  }`}
-                  onClick={(e) => gateProItem(e, item)}
-                >
-                  <Icon className="w-5 h-5 mr-3" />
-                  {item.name}
-                  {item.pro && !isPro && <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400/90 text-amber-950">PRO</span>}
-                </Link>
-              )
-            })}
-            
-            {/* Admin Menu - Only show for admin users */}
-            {user?.role === 'admin' && (
-              <div className="space-y-1">
-                {adminNavigation.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={`sidebar-item ${
-                        isActive(item.href) ? 'sidebar-item-active' : 'sidebar-item-inactive'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5 mr-3" />
-                      {item.name}
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-            
-            {/* Scripts Dropdown */}
-            <div className="space-y-1">
-              <button
-                onClick={() => setScriptsDropdownOpen(!scriptsDropdownOpen)}
-                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  isScriptsActive() 
-                    ? 'bg-primary-100 text-primary-700 dark:bg-gradient-to-r dark:from-cyan-500/20 dark:to-violet-500/20 dark:text-cyan-200 dark:ring-1 dark:ring-cyan-400/30' 
-                    : 'text-secondary-600 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:bg-secondary-700'
-                }`}
-              >
-                <Code className="w-5 h-5 mr-3" />
-                Scripts
-                {scriptsDropdownOpen ? (
-                  <ChevronDown className="w-4 h-4 ml-auto" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 ml-auto" />
-                )}
-              </button>
-              
-              {scriptsDropdownOpen && (
-                <div className="ml-8 space-y-1">
-                  {scriptsSubmenu.map((item) => {
-                    const Icon = item.icon
-                    return (
-                      <Link
-                        key={item.name}
-                        to={item.href}
-                        className={`sidebar-item ${
-                          isActive(item.href) ? 'sidebar-item-active' : 'sidebar-item-inactive'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4 mr-3" />
-                        {item.name}
-                      </Link>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </nav>
+          <Sidebar isPro={isPro} isAdmin={isAdmin} planLabel={planLabel} onProGate={gateProItem} />
         </div>
       </div>
 
@@ -505,8 +269,7 @@ const Layout: React.FC = () => {
             
             <div className="flex items-center space-x-4">
               <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                <BarChart3 className="w-4 h-4 text-blue-500" />
-                <span className="font-medium">Welcome back, {user?.username}</span>
+                <span className="font-medium">Hi, {user?.username}</span>
                 {isPro && (
                   <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full shadow-md">
                     <Crown className="w-3 h-3 mr-1" />
@@ -517,57 +280,6 @@ const Layout: React.FC = () => {
               
               <div className="flex items-center space-x-2">
                 <ThemeToggle />
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  title="Dashboard"
-                >
-                  <Home className="w-5 h-5" />
-                </button>
-                
-                <button
-                  onClick={() => navigate('/roadmap')}
-                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative group"
-                  title="DevOps Roadmap"
-                >
-                  <Map className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    DevOps Roadmap
-                  </span>
-                </button>
-                
-                <button
-                  onClick={() => navigate('/history')}
-                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  title="History"
-                >
-                  <History className="w-5 h-5" />
-                </button>
-                
-                <button
-                  onClick={() => navigate('/blogs')}
-                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  title="Blog"
-                >
-                  <FileText className="w-5 h-5" />
-                </button>
-                
-                <button
-                  onClick={() => navigate('/blogs/my-blogs')}
-                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  title="My Blogs"
-                >
-                  <BookOpen className="w-5 h-5" />
-                </button>
-                
-                <button
-                  onClick={() => navigate('/chat')}
-                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  title="Collaboration Hub"
-                >
-                  <MessageSquare className="w-5 h-5" />
-                </button>
-                
                 {/* Profile Dropdown */}
                 <div className="relative" ref={profileDropdownRef}>
                   <button
