@@ -43,7 +43,7 @@ const initializeSocket = (server) => {
   const onlineUsers = new Map();
 
   // Authenticate every connection: identity comes from a verified JWT, never from client-supplied ids
-  io.use(async (socket, next) => {
+  const authenticate = async (socket, next) => {
     try {
       // session cookie (browser) or explicit token (API clients)
       const cookies = cookie.parse(socket.handshake.headers.cookie || '');
@@ -61,7 +61,11 @@ const initializeSocket = (server) => {
     } catch (e) {
       next(new Error('Authentication failed'));
     }
-  });
+  };
+  io.use(authenticate);
+
+  // Linux practice sandbox lives in its own namespace (same authentication)
+  require('./sandboxSocket').register(io, authenticate);
 
   // Only members of a chat may read from / write to its room
   const getMemberChat = async (chatId, userId) => {

@@ -14,6 +14,7 @@ const History = lazy(() => import('./pages/History/History'))
 const Bundle = lazy(() => import('./pages/Bundle/Bundle'))
 const LearnHub = lazy(() => import('./pages/Learn/LearnHub'))
 const GuideView = lazy(() => import('./pages/Learn/GuideView'))
+const Sandbox = lazy(() => import('./pages/Sandbox/Sandbox'))
 import PublicPage from './components/Learn/PublicPage'
 const Security = lazy(() => import('./pages/Security/Security'))
 const Billing = lazy(() => import('./pages/Billing/Billing'))
@@ -111,6 +112,7 @@ function App() {
           <Route path="messages" element={<AdminMessages />} />
           <Route path="audit" element={<AdminAudit />} />
         </Route>
+        <Route path="sandbox" element={<Sandbox />} />
         <Route path="learn" element={<LearnHub />} />
         <Route path="learn/:slug" element={<GuideView />} />
         <Route path="help" element={<Help />} />

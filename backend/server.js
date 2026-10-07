@@ -29,6 +29,8 @@ const blogRoutes = require('./routes/blog');
 const costAnalysisRoutes = require('./routes/costAnalysis');
 const toolsRoutes = require('./routes/tools');
 const learnRoutes = require('./routes/learn');
+const sandboxRoutes = require('./routes/sandbox');
+const sandboxManager = require('./services/sandbox/sandboxManager');
 const { auth } = require('./middleware/auth');
 const { requireFeature } = require('./middleware/subscription');
 const { initializeSocket } = require('./socket');
@@ -177,6 +179,7 @@ app.use('/api/blogs', blogRoutes);
 app.use('/api/cost-analysis', auth, requireFeature('costAnalysis'), costAnalysisRoutes);
 app.use('/api/tools', toolsRoutes);
 app.use('/api/learn', learnRoutes);
+app.use('/api/sandbox', sandboxRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -211,3 +214,8 @@ const PORT = process.env.PORT || 5001;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Throw away every learner sandbox on shutdown so no container is left running
+const stopSandboxes = () => sandboxManager.shutdown().finally(() => process.exit(0));
+process.on('SIGTERM', stopSandboxes);
+process.on('SIGINT', stopSandboxes);

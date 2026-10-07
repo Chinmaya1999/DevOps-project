@@ -29,6 +29,7 @@ import {
   Crown,
   Sparkles,
   Workflow,
+  TerminalSquare,
 } from 'lucide-react'
 import Logo from '../UI/Logo'
 
@@ -86,6 +87,7 @@ const GROUPS: NavGroup[] = [
     id: 'learn',
     label: 'Learn & Community',
     items: [
+      { name: 'Linux Sandbox', href: '/sandbox', icon: TerminalSquare },
       { name: 'Learn DevOps', href: '/learn', icon: GraduationCap },
       { name: 'DevOps Docs', href: '/devops-docs', icon: BookOpen },
       { name: 'Roadmap', href: '/roadmap', icon: Map },

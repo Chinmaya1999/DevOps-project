@@ -1,0 +1,3 @@
+ Welcome to the Linux sandbox. This machine is yours; it disappears when the session ends.
+ You are the user "learner" with no internet access (localhost works). Nothing here can harm anything real.
+ Tips:  ls -la | cat file | man <command> | <command> --help | history | Ctrl+C stops a command

@@ -12,14 +12,17 @@ const PLANS = Object.freeze({
   free: {
     label: 'Free',
     generationsPerMonth: 10,
+    // Linux sandbox: beginner labs + free play, short sessions
+    sandbox: { sessionMinutes: 15, sessionsPerDay: 5, levels: ['beginner'] },
     features: { generators: true, validator: true, troubleshooter: true, secretScanner: true, docs: true, community: true,
-                bundle: false, deployments: false, costAnalysis: false, vision: false },
+                bundle: false, deployments: false, costAnalysis: false, vision: false, sandbox: true },
   },
   pro: {
     label: 'Pro',
     generationsPerMonth: Infinity,
+    sandbox: { sessionMinutes: 60, sessionsPerDay: 50, levels: ['beginner', 'intermediate', 'advanced'] },
     features: { generators: true, validator: true, troubleshooter: true, secretScanner: true, docs: true, community: true,
-                bundle: true, deployments: true, costAnalysis: true, vision: true },
+                bundle: true, deployments: true, costAnalysis: true, vision: true, sandbox: true },
   },
 });
 
@@ -56,6 +59,7 @@ function getEffectivePlan(user, now = new Date()) {
     daysLeft,
     generationsPerMonth: PLANS[plan].generationsPerMonth === Infinity ? null : PLANS[plan].generationsPerMonth,
     features: PLANS[plan].features,
+    sandbox: PLANS[plan].sandbox,
   };
 }
 
