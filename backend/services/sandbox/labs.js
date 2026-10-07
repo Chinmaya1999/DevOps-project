@@ -204,8 +204,8 @@ echo "login page" > login.txt`,
     hints: ['`ps aux | grep sleep` lists matching processes.', '`pgrep -f "sleep 4242"` prints just the PID.', '`kill <PID>` (or `pkill -f "sleep 4242"`).'],
     setup: String.raw`(nohup sleep 4242 >/dev/null 2>&1 &)
 (nohup sleep 4243 >/dev/null 2>&1 &)`,
-    check: String.raw`! pgrep -f 'sleep 4242' >/dev/null && pgrep -f 'sleep 4243' >/dev/null`,
-    solution: String.raw`pkill -f 'sleep 4242'`,
+    check: String.raw`! pgrep -f '[s]leep 4242' >/dev/null && pgrep -f '[s]leep 4243' >/dev/null`,
+    solution: String.raw`pkill -f '[s]leep 4242'`,
   }),
   lab({
     id: 'cron-syntax', level: 'intermediate', category: 'linux', minutes: 8,
@@ -402,8 +402,8 @@ printf 'port=eighty\ndb_host=\n' > config.ini`,
 printf '#!/bin/bash\nwhile :; do :; done\n' > ~/lab/report-generator.sh
 (nohup bash ~/lab/report-generator.sh >/dev/null 2>&1 &)
 (nohup sleep 9999 >/dev/null 2>&1 &)`,
-    check: String.raw`! pgrep -f report-generator.sh >/dev/null && pgrep -f 'sleep 9999' >/dev/null`,
-    solution: 'pkill -f report-generator.sh',
+    check: String.raw`! pgrep -f '[r]eport-generator.sh' >/dev/null && pgrep -f '[s]leep 9999' >/dev/null`,
+    solution: "pkill -f '[r]eport-generator.sh'",
   }),
   lab({
     id: 'incident-permissions', level: 'advanced', category: 'incident', minutes: 10,
@@ -440,8 +440,8 @@ echo "app started"
 EOF
 chmod +x ~/lab/app/start-app.sh
 sleep 1`,
-    check: String.raw`rm -f ~/lab/app/status; bash ~/lab/app/start-app.sh >/dev/null 2>&1; [ "$(cat ~/lab/app/status 2>/dev/null)" = "started" ] && pgrep -f 'http.server 8082' >/dev/null`,
-    solution: String.raw`pkill -f 'http.server 8081'; sleep 1; bash ~/lab/app/start-app.sh`,
+    check: String.raw`rm -f ~/lab/app/status; bash ~/lab/app/start-app.sh >/dev/null 2>&1; [ "$(cat ~/lab/app/status 2>/dev/null)" = "started" ] && pgrep -f 'http.server 808[2]' >/dev/null`,
+    solution: String.raw`pkill -f 'http.server 808[1]'; sleep 1; bash ~/lab/app/start-app.sh`,
   }),
   lab({
     id: 'incident-deploy-blame', level: 'advanced', category: 'incident', minutes: 12,
